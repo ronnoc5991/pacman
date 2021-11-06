@@ -4,7 +4,7 @@ import {useAnimationFrame} from "./utils/useAnimationFrame";
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 
-const playerCharacter = new PlayerCharacter(10, { x: 250, y: 250 });
+const playerCharacter = new PlayerCharacter(10, { x: 250, y: 250 }, 2);
 
 const board = new Board(canvas, [playerCharacter]);
 
@@ -25,7 +25,7 @@ window.addEventListener('keydown', (event) => {
     default:
       // do nothing
       break;
-  };
+  }
 })
 
 useAnimationFrame(() => {
