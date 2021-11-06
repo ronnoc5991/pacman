@@ -4,4 +4,5 @@ export type Character = {
   position: Position;
   radius: number;
   updatePosition: () => void;
+  getNextPosition: () => Position;
 }
