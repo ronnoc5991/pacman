@@ -1,16 +1,7 @@
 import { Position } from '../../types/Position';
 import {Direction} from "../../types/Direction";
 import {Hitbox} from "../../types/Hitbox";
-
-// think about who has responsibility for checking if next position is valid...
-// does the board do that?
-// or does each character do that?
-// Maybe the ghosts will need to know whether or not their next move is okay... that way they can plan their routes?
-
-// The characters should be passed the board and use it like a map
-// They should be able to call the board's functions to understand where they are allowed to go
-
-// Player character should save requested direction change until it is possible to go in that direction or it receives a new direction request
+import {Map} from "../../types/Map";
 
 export class Character {
   radius: number;
@@ -18,8 +9,9 @@ export class Character {
   velocity: number;
   direction: Direction;
   hitbox: Hitbox;
+  map: Map;
 
-  constructor(radius: number, position: Position, velocity: number) {
+  constructor(radius: number, position: Position, velocity: number, map: Map) {
     this.radius = radius;
     this.position = position;
     this.velocity = velocity;
@@ -30,9 +22,10 @@ export class Character {
       bottom: position.y + radius,
       left: position.x - radius,
     }
+    this.map = map;
   }
 
-  public setDirection(direction: Direction) { // this may be a playerCharacter only method
+  public setDirection(direction: Direction) {
     this.direction = direction;
   }
 
@@ -68,8 +61,66 @@ export class Character {
     }
   }
 
-  public updatePosition() {
-    this.position = this.getNextPosition();
-    this.hitbox = this.getHitboxFromNextPosition();
+  public isNextMoveAllowed = (direction: Direction) => {
+    let isAllowed = false;
+    const hitboxFromNextPosition = this.getHitboxFromNextPosition(direction);
+    switch (direction) {
+      case 'up':
+        if (
+          this.map.horizontalLines.every((line) => {
+            return (
+              line.start.y !== hitboxFromNextPosition.top
+              || (hitboxFromNextPosition.right < line.start.x)
+              || (hitboxFromNextPosition.left > line.end.x)
+            )
+          })
+        ) {
+          isAllowed = true;
+        }
+        break;
+      case 'right':
+        if (
+          this.map.verticalLines.every((line) => {
+            return (
+              line.start.x !== hitboxFromNextPosition.right
+              || (hitboxFromNextPosition.bottom < line.start.y)
+              || (hitboxFromNextPosition.top > line.end.y)
+            )
+          })
+        ) {
+          isAllowed = true;
+        }
+        break;
+      case 'down':
+        if (
+          this.map.horizontalLines.every((line) => {
+            return (
+              line.start.y !== hitboxFromNextPosition.bottom
+              || (hitboxFromNextPosition.right < line.start.x)
+              || (hitboxFromNextPosition.left > line.end.x)
+            )
+          })
+        ) {
+          isAllowed = true;
+        }
+        break;
+      case 'left':
+        if (
+          this.map.verticalLines.every((line) => {
+            return (
+              line.start.x !== hitboxFromNextPosition.left
+              || (hitboxFromNextPosition.bottom < line.start.y)
+              || (hitboxFromNextPosition.top > line.end.y)
+            )
+          })
+        ) {
+          isAllowed = true;
+        }
+        break;
+      default:
+        // do nothing;
+        break;
+    }
+    return isAllowed;
   }
 }
