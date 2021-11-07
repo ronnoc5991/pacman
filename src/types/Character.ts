@@ -1,8 +1,14 @@
 import {Position} from "./Position";
+import {Direction} from "./Direction";
+import { Hitbox } from './Hitbox';
 
 export type Character = {
-  position: Position;
   radius: number;
+  position: Position;
+  hitbox: Hitbox;
+  direction: Direction;
   updatePosition: () => void;
-  getNextPosition: () => Position;
+  getNextPosition: (direction?: Direction) => Position;
+  getHitboxFromNextPosition: (direction?: Direction) => Hitbox;
+  setDirection: (direction: Direction) => void;
 }
