@@ -1,4 +1,4 @@
-export type Line = {
+export type Barrier = {
   start: {
     x: number;
     y: number;

@@ -7,7 +7,7 @@ export class PlayerCharacter extends Character {
   nextDirection: Direction;
 
   constructor(radius: number, position: Position, velocity:  number, map: Map) {
-    super(radius, position, velocity, map);
+    super(position, radius, velocity, 'left', map);
     this.nextDirection = 'left';
   }
 
@@ -15,16 +15,14 @@ export class PlayerCharacter extends Character {
     this.nextDirection = direction;
   }
 
-
   public updatePosition() {
-    if (this.direction !== this.nextDirection && this.isNextMoveAllowed(this.nextDirection)) {
+    if (this.direction !== this.nextDirection && this.isNextMoveAllowed(this.position, this.nextDirection)) {
       this.setDirection(this.nextDirection);
     }
 
-    if (this.isNextMoveAllowed(this.direction)) {
+    if (this.isNextMoveAllowed(this.position, this.direction)) {
       this.position = this.getNextPosition();
-      this.hitbox = this.getHitboxFromNextPosition();
+      this.setHitbox();
     }
-
   }
 }

@@ -1,36 +1,35 @@
 import { Position } from '../../types/Position';
 import {Direction} from "../../types/Direction";
-import {Hitbox} from "../../types/Hitbox";
 import {Map} from "../../types/Map";
+import {CollidableObject} from "../CollidableObject/CollidableObject";
 
-export class Character {
-  radius: number;
-  position: Position;
-  velocity: number;
+export class Character extends CollidableObject {
+  initialPosition: Position;
+  initialDirection: Direction;
   direction: Direction;
-  hitbox: Hitbox;
+  velocity: number;
   map: Map;
 
-  constructor(radius: number, position: Position, velocity: number, map: Map) {
-    this.radius = radius;
-    this.position = position;
+  constructor(position: Position, radius: number, velocity: number, direction: Direction, map: Map) {
+    super(position, radius);
+    this.initialPosition = position;
+    this.initialDirection = direction;
     this.velocity = velocity;
-    this.direction = 'left';
-    this.hitbox = {
-      top: position.y - radius,
-      right: position.x + radius,
-      bottom: position.y + radius,
-      left: position.x - radius,
-    }
+    this.direction = direction;
     this.map = map;
+  }
+
+  public resetPosition() {
+    this.position = this.initialPosition;
+    this.direction = this.initialDirection;
   }
 
   public setDirection(direction: Direction) {
     this.direction = direction;
   }
 
-  public getNextPosition(direction = this.direction) {
-    const nextPosition = { ...this.position};
+  public getNextPosition(position = this.position, direction = this.direction) {
+    const nextPosition = { ...position};
     switch (direction) {
       case 'up':
         nextPosition.y -= this.velocity;
@@ -51,27 +50,17 @@ export class Character {
     return nextPosition;
   }
 
-  public getHitboxFromNextPosition(direction = this.direction) {
-    const nextPosition = this.getNextPosition(direction);
-    return {
-      top: nextPosition.y - this.radius,
-      right: nextPosition.x + this.radius,
-      bottom: nextPosition.y + this.radius,
-      left: nextPosition.x - this.radius,
-    }
-  }
-
-  public isNextMoveAllowed = (direction: Direction) => {
+  public isNextMoveAllowed = (position = this.position, direction: Direction) => {
     let isAllowed = false;
-    const hitboxFromNextPosition = this.getHitboxFromNextPosition(direction);
+    const hitboxFromNextPosition = this.getHitbox(this.getNextPosition(position, direction), this.radius);
     switch (direction) {
       case 'up':
         if (
-          this.map.horizontalLines.every((line) => {
+          this.map.barriers.horizontal.every((barrier) => {
             return (
-              line.start.y !== hitboxFromNextPosition.top
-              || (hitboxFromNextPosition.right < line.start.x)
-              || (hitboxFromNextPosition.left > line.end.x)
+              barrier.start.y !== hitboxFromNextPosition.top
+              || (hitboxFromNextPosition.right < barrier.start.x)
+              || (hitboxFromNextPosition.left > barrier.end.x)
             )
           })
         ) {
@@ -80,11 +69,11 @@ export class Character {
         break;
       case 'right':
         if (
-          this.map.verticalLines.every((line) => {
+          this.map.barriers.vertical.every((barrier) => {
             return (
-              line.start.x !== hitboxFromNextPosition.right
-              || (hitboxFromNextPosition.bottom < line.start.y)
-              || (hitboxFromNextPosition.top > line.end.y)
+              barrier.start.x !== hitboxFromNextPosition.right
+              || (hitboxFromNextPosition.bottom < barrier.start.y)
+              || (hitboxFromNextPosition.top > barrier.end.y)
             )
           })
         ) {
@@ -93,11 +82,11 @@ export class Character {
         break;
       case 'down':
         if (
-          this.map.horizontalLines.every((line) => {
+          this.map.barriers.horizontal.every((barrier) => {
             return (
-              line.start.y !== hitboxFromNextPosition.bottom
-              || (hitboxFromNextPosition.right < line.start.x)
-              || (hitboxFromNextPosition.left > line.end.x)
+              barrier.start.y !== hitboxFromNextPosition.bottom
+              || (hitboxFromNextPosition.right < barrier.start.x)
+              || (hitboxFromNextPosition.left > barrier.end.x)
             )
           })
         ) {
@@ -106,11 +95,11 @@ export class Character {
         break;
       case 'left':
         if (
-          this.map.verticalLines.every((line) => {
+          this.map.barriers.vertical.every((barrier) => {
             return (
-              line.start.x !== hitboxFromNextPosition.left
-              || (hitboxFromNextPosition.bottom < line.start.y)
-              || (hitboxFromNextPosition.top > line.end.y)
+              barrier.start.x !== hitboxFromNextPosition.left
+              || (hitboxFromNextPosition.bottom < barrier.start.y)
+              || (hitboxFromNextPosition.top > barrier.end.y)
             )
           })
         ) {

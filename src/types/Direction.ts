@@ -1,1 +1,3 @@
-export type Direction = 'up' | 'right' | 'down' | 'left';
+export const directions = ['up', 'right', 'down', 'left'] as const;
+
+export type Direction = typeof directions[number];
