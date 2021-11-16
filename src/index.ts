@@ -8,20 +8,28 @@ import {MapTemplate} from "./types/MapTemplate";
 // config
 const gridCellSize = 20;
 
-// create interface for creating these templates so that it goes quicker
+// create user interface for creating these templates so that it goes quicker
 
 const mapTemplate: MapTemplate = [
-  ['pp','p','p','p','p','p','p','p','p','p','pp'],
-  ['p','b','b','b','b','p','b','b','b','b','p'],
-  ['p','b','p','p','p','p','p','p','p','b','p'],
-  ['p','b','p','b','p','b','p','b','p','b','p'],
-  ['p','b','p','p','p','b','p','p','p','b','p'],
-  ['p','p','p','b','b','b','b','b','p','p','p'],
-  ['p','b','p','p','p','b','p','p','p','b','p'],
-  ['p','b','p','b','p','b','p','b','p','b','p'],
-  ['p','b','p','p','p','p','p','p','p','b','p'],
-  ['p','b','b','b','b','p','b','b','b','b','p'],
-  ['pp','p','p','p','p','c','p','p','p','p','pp'],
+ ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'b', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+  ['pp', 'b', 'b', 'p', 'b', 'b', 'b', 'p', 'b', 'p', 'b', 'b', 'b', 'p', 'b', 'b', 'pp'],
+  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+  ['p', 'b', 'b', 'p', 'b', 'p', 'b', 'b', 'b', 'b', 'b', 'p', 'b', 'p', 'b', 'b', 'p'],
+  ['p', 'p', 'p', 'p', 'b', 'p', 'p', 'p', 'b', 'p', 'p', 'p', 'b', 'p', 'p', 'p', 'p'],
+  ['b', 'b', 'b', 'p', 'b', 'b', 'b', 'e', 'b', 'e', 'b', 'b', 'b', 'p', 'b', 'b', 'b'],
+  ['b', 'b', 'b', 'p', 'b', 'e', 'e', 'e', 'gs', 'e', 'e', 'e', 'b', 'p', 'b', 'b', 'b'],
+  ['b', 'b', 'b', 'p', 'b', 'e', 'gc', 'gc', 'ge', 'gc', 'gc', 'e', 'b', 'p', 'b', 'b', 'b'],
+  ['e', 'e', 'e', 'p', 'e', 'e', 'gc', 'gs', 'gs', 'gs', 'gc', 'e', 'e', 'p', 'e', 'e', 'e'],
+  ['b', 'b', 'b', 'p', 'b', 'e', 'gc', 'gc', 'gc', 'gc', 'gc', 'e', 'b', 'p', 'b', 'b', 'b'],
+  ['b', 'b', 'b', 'p', 'b', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'b', 'p', 'b', 'b', 'b'],
+  ['b', 'b', 'b', 'p', 'b', 'e', 'b', 'b', 'b', 'b', 'b', 'e', 'b', 'p', 'b', 'b', 'b'],
+  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'b', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+  ['p', 'b', 'b', 'p', 'b', 'b', 'b', 'p', 'b', 'p', 'b', 'b', 'b', 'p', 'b', 'b', 'p'],
+  ['pp', 'p', 'b', 'p', 'p', 'p', 'p', 'p', 'c', 'p', 'p', 'p', 'p', 'p', 'b', 'p', 'pp'],
+  ['b', 'p', 'b', 'p', 'b', 'p', 'b', 'b', 'b', 'b', 'b', 'p', 'b', 'p', 'b', 'p', 'b'],
+  ['p', 'p', 'p', 'p', 'b', 'p', 'p', 'p', 'b', 'p', 'p', 'p', 'b', 'p', 'p', 'p', 'p'],
+  ['p', 'b', 'b', 'b', 'b', 'b', 'b', 'p', 'b', 'p', 'b', 'b', 'b', 'b', 'b', 'b', 'p'],
+  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
 ];
 
 const canvas = document.getElementById('canvas') as HTMLCanvasElement;

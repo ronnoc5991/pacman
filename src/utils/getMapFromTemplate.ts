@@ -32,6 +32,7 @@ export const getMapFromTemplate = (canvas: HTMLCanvasElement, mapTemplate: MapTe
   let barriers: Array<Barrier> = [...createLinesFromPoints([{ x: 0, y: 0 }, { x: canvas.width, y: 0 }, { x: canvas.width, y: canvas.height }, { x: 0, y: canvas.height }])];
   const navigableCellCenterPositions: Array<Position> = [];
   let initialPlayerPosition = { x: 0, y: 0 };
+  let initalNonPlayerCharacterPosition = { x: 0, y: 0 };
   const pellets: Array<Pellet> = [];
 
   mapTemplate.map((row, rowIndex) => {
@@ -53,6 +54,19 @@ export const getMapFromTemplate = (canvas: HTMLCanvasElement, mapTemplate: MapTe
         case mapTemplateCellValueMap.powerPellet:
           pellets.push(new Pellet({x, y}, gridCellSize / 5, true));
           navigableCellCenterPositions.push({x, y});
+          break;
+        case mapTemplateCellValueMap.empty:
+          navigableCellCenterPositions.push({x, y});
+          break;
+        case mapTemplateCellValueMap.ghostStart:
+          initalNonPlayerCharacterPosition = { x, y };
+          navigableCellCenterPositions.push({x, y});
+          break;
+        case mapTemplateCellValueMap.ghostCage:
+          // store this value in an array
+          // determine which points need to draw horizontal lines
+          // and which points need to draw vertical lines
+          // these should be added to the barriers after being calculated
           break;
         default:
           // do nothing

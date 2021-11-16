@@ -46,7 +46,6 @@ export class Board {
 
     // check for player npc intersections
     if (this.nonPlayerCharacters.filter((nonPlayerCharacter) => checkIfObjectsAreColliding(this.playerCharacter, nonPlayerCharacter)).length > 0) {
-      console.log('collision');
       this.characters.forEach((character) => character.resetPosition())
     }
   }
