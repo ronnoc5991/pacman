@@ -3,14 +3,8 @@ import { Position } from "../types/Position";
 import { Barrier } from '../types/Barrier';
 import { MapTemplate, mapTemplateCellValueMap } from '../types/MapTemplate';
 import { Pellet } from "../classes/Pellet/Pellet";
-
-
-const createLinesFromPoints = (points: Array<Position>) => {
-  return points.map((point, index) => {
-    let nextIndex = index + 1 === points.length ? 0 : index + 1;
-    return { start: { x: Math.min(point.x, points[nextIndex].x),  y: Math.min(point.y, points[nextIndex].y)}, end: { x: Math.max(point.x, points[nextIndex].x), y: Math.max(point.y, points[nextIndex].y) } }
-  });
-}
+import {Teleporter} from "../classes/Teleporter/Teleporter";
+import {CollidableObject} from "../types/CollidableObject";
 
 const removeDuplicateBarriers = (barriers: Array<Barrier>): Array<Barrier> => barriers.filter((barrier, index, array) => (
   1 === array.filter((lin) => (
@@ -27,18 +21,35 @@ const getBarrierLinesFromMidPointCoordinate = ({ x, y } : Position, blockSize: n
   return [topLine, rightLine, bottomLine, leftLine];
 }
 
-export const getMapFromTemplate = (canvas: HTMLCanvasElement, mapTemplate: MapTemplate, gridCellSize: number): Map => {
+// create a function that takes a cell value, gridCellSize, rowIndex, columnIndex, and pushes the correct things into the correct places?
+
+export const getMapFromTemplate = (mapTemplate: MapTemplate, gridCellSize: number): Map => {
   // need to draw the outer barriers based on canvas size, as the canvas may not be a square
-  let barriers: Array<Barrier> = [...createLinesFromPoints([{ x: 0, y: 0 }, { x: canvas.width, y: 0 }, { x: canvas.width, y: canvas.height }, { x: 0, y: canvas.height }])];
+  let barriers: Array<Barrier> = [];
   const navigableCellCenterPositions: Array<Position> = [];
   let initialPlayerPosition = { x: 0, y: 0 };
-  let initalNonPlayerCharacterPosition = { x: 0, y: 0 };
+  let initialNonPlayerCharacterPositions: Array<Position> = [];
+  let teleporters: Array<CollidableObject> = [];
   const pellets: Array<Pellet> = [];
 
   mapTemplate.map((row, rowIndex) => {
     row.map((cell, columnIndex) => {
       const x = columnIndex === 0 ? gridCellSize / 2 : gridCellSize / 2 + gridCellSize * columnIndex;
       const y = rowIndex === 0 ? gridCellSize / 2 : gridCellSize / 2 + gridCellSize * rowIndex;
+
+      //  if columnIndex === row.length - 1 and is not a barrier, should draw a line to the right of it
+      if (columnIndex === row.length - 1 && cell !== mapTemplateCellValueMap.teleporter) barriers.push({ start: { x: x + gridCellSize / 2, y: y - gridCellSize / 2  }, end: { x: x + gridCellSize / 2, y: y + gridCellSize / 2 } })
+      //  if columnIndex === 0 and is not a barrier, should draw a line to the left of it
+      if (columnIndex === 0 && cell !== mapTemplateCellValueMap.teleporter) barriers.push({ start: { x: x - gridCellSize / 2, y: y - gridCellSize / 2  }, end: { x: x - gridCellSize / 2, y: y + gridCellSize / 2 } })
+      //  if rowIndex === 0 and it is not a barrier, should draw a line above it
+      if (rowIndex === 0) barriers.push({ start: { x: x - gridCellSize / 2, y: y - gridCellSize / 2  }, end: { x: x + gridCellSize / 2, y: y - gridCellSize / 2 } })
+      //  if rowIndex === mapTemplate.length -1 and it is not a barrier, should draw a line below it
+      if (rowIndex === mapTemplate.length - 1) barriers.push({ start: { x: x - gridCellSize / 2, y: y + gridCellSize / 2  }, end: { x: x + gridCellSize / 2, y: y + gridCellSize / 2 } })
+
+      if (columnIndex === 0 && cell === mapTemplateCellValueMap.teleporter) teleporters.push(new Teleporter({ x: x - gridCellSize, y }));
+      if (columnIndex === row.length - 1 && cell === mapTemplateCellValueMap.teleporter) teleporters.push(new Teleporter({ x: x + gridCellSize, y }));
+
+
       switch (cell) {
         case mapTemplateCellValueMap.playerCharacter:
           initialPlayerPosition = { x, y };
@@ -59,7 +70,7 @@ export const getMapFromTemplate = (canvas: HTMLCanvasElement, mapTemplate: MapTe
           navigableCellCenterPositions.push({x, y});
           break;
         case mapTemplateCellValueMap.ghostStart:
-          initalNonPlayerCharacterPosition = { x, y };
+          initialNonPlayerCharacterPositions.push({x, y});
           navigableCellCenterPositions.push({x, y});
           break;
         case mapTemplateCellValueMap.ghostCage:
@@ -87,6 +98,8 @@ export const getMapFromTemplate = (canvas: HTMLCanvasElement, mapTemplate: MapTe
     },
     navigableCellCenterPositions,
     initialPlayerPosition,
+    initialNonPlayerCharacterPositions,
     pellets,
+    teleporters,
   };
 }

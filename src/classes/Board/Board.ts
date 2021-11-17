@@ -5,6 +5,7 @@ import type { Position } from '../../types/Position';
 import { drawCircle } from "../../utils/drawCircle";
 import { Pellet } from "../../types/Pellet";
 import { checkIfObjectsAreColliding } from "../../utils/checkIfObjectsAreColliding";
+import {CollidableObject} from "../../types/CollidableObject";
 
 export class Board {
   canvas: HTMLCanvasElement;
@@ -15,16 +16,18 @@ export class Board {
   initialPlayerCharacterPosition: Position;
   nonPlayerCharacters: Array<Character>;
   characters: Array<Character>;
+  teleporters: Array<CollidableObject>;
 
   constructor(canvas: HTMLCanvasElement, map: Map, playerCharacter: PlayerCharacter, nonPlayerCharacters: Array<Character>) {
     this.canvas = canvas;
     this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
     this.barriers = [...map.barriers.horizontal, ...map.barriers.vertical];
-    this.pellets = map.pellets,
+    this.pellets = map.pellets;
     this.playerCharacter = playerCharacter;
     this.nonPlayerCharacters = nonPlayerCharacters;
     this.characters = [playerCharacter, ...nonPlayerCharacters];
     this.initialPlayerCharacterPosition = map.initialPlayerPosition;
+    this.teleporters = map.teleporters;
   }
 
   private clearCanvas() {
@@ -34,7 +37,9 @@ export class Board {
   private updatePositions() {
     // update character positions
     this.characters.forEach((character) => character.updatePosition());
+  }
 
+  private handleCollisions() {
     // check for pellet intersections
     // check if the pellet that we just ate was a power pellet...
     // if yes, we need change the game mode, then set a timeout that toggles that game mode back
@@ -45,13 +50,25 @@ export class Board {
     });
 
     // check for player npc intersections
-    if (this.nonPlayerCharacters.filter((nonPlayerCharacter) => checkIfObjectsAreColliding(this.playerCharacter, nonPlayerCharacter)).length > 0) {
+    if (this.nonPlayerCharacters.filter((nonPlayerCharacter) => checkIfObjectsAreColliding(this.playerCharacter, nonPlayerCharacter, 'overlap')).length > 0) {
       this.characters.forEach((character) => character.resetPosition())
     }
+
+    if (!this.teleporters) return;
+    this.characters.forEach((character) => {
+      const indexOfCollidedTeleporter = this.teleporters.findIndex((teleporter) => {
+        return checkIfObjectsAreColliding(character, teleporter, 'center');
+      });
+      if (indexOfCollidedTeleporter > -1) {
+        const { position: newPosition } = this.teleporters.find((teleporter, index) => index !== indexOfCollidedTeleporter)!; // fix this exclamation mark
+        character.setPosition(newPosition as Position);
+      }
+      });
   }
 
   private drawCanvas() {
     this.barriers.forEach((barrier) => {
+      this.context.strokeStyle = "#082ed0";
       this.context.beginPath();
       this.context.moveTo(barrier.start.x, barrier.start.y);
       this.context.lineTo(barrier.end.x, barrier.end.y);
@@ -67,6 +84,7 @@ export class Board {
   public update() {
     this.clearCanvas();
     this.updatePositions();
+    this.handleCollisions();
     this.drawCanvas();
   }
 }

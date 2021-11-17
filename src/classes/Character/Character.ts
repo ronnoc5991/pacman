@@ -19,6 +19,13 @@ export class Character extends CollidableObject {
     this.map = map;
   }
 
+  // characters should probably not know about their initial positions
+  // the board should set their positions with its knowledge
+
+  public setPosition(position: Position) {
+    this.position = position;
+  }
+
   public resetPosition() {
     this.position = this.initialPosition;
     this.direction = this.initialDirection;

@@ -19,7 +19,7 @@ const mapTemplate: MapTemplate = [
   ['b', 'b', 'b', 'p', 'b', 'b', 'b', 'e', 'b', 'e', 'b', 'b', 'b', 'p', 'b', 'b', 'b'],
   ['b', 'b', 'b', 'p', 'b', 'e', 'e', 'e', 'gs', 'e', 'e', 'e', 'b', 'p', 'b', 'b', 'b'],
   ['b', 'b', 'b', 'p', 'b', 'e', 'gc', 'gc', 'ge', 'gc', 'gc', 'e', 'b', 'p', 'b', 'b', 'b'],
-  ['e', 'e', 'e', 'p', 'e', 'e', 'gc', 'gs', 'gs', 'gs', 'gc', 'e', 'e', 'p', 'e', 'e', 'e'],
+  ['t', 'e', 'e', 'p', 'e', 'e', 'gc', 'e', 'e', 'e', 'gc', 'e', 'e', 'p', 'e', 'e', 't'],
   ['b', 'b', 'b', 'p', 'b', 'e', 'gc', 'gc', 'gc', 'gc', 'gc', 'e', 'b', 'p', 'b', 'b', 'b'],
   ['b', 'b', 'b', 'p', 'b', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'b', 'p', 'b', 'b', 'b'],
   ['b', 'b', 'b', 'p', 'b', 'e', 'b', 'b', 'b', 'b', 'b', 'e', 'b', 'p', 'b', 'b', 'b'],
@@ -36,7 +36,7 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 canvas.height = gridCellSize * mapTemplate.length;
 canvas.width = gridCellSize * mapTemplate[0].length;
 
-const map = getMapFromTemplate(canvas, mapTemplate, gridCellSize);
+const map = getMapFromTemplate(mapTemplate, gridCellSize);
 
 // the board should be passed the players, and place them on the map
 // that way the board can reset itself when the player touches a ghost... it can set the players position and the npcs position
@@ -67,9 +67,9 @@ window.addEventListener('keydown', (event) => {
   }
 })
 
-const nonPlayerCharacter = new NonPlayerCharacter(characterRadius, { x: 110, y: 10 }, 1, map, playerCharacter);
-
-const board = new Board(canvas, map, playerCharacter, [nonPlayerCharacter]);
+const board = new Board(canvas, map, playerCharacter, map.initialNonPlayerCharacterPositions.map((initialPosition) => {
+  return new NonPlayerCharacter(characterRadius, initialPosition, 1, map, playerCharacter);
+}));
 
 // this animation frame should be able to be stopped and restarted?  from where?
 useAnimationFrame(() => {

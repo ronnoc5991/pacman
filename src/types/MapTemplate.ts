@@ -6,12 +6,13 @@ const templateCellValues = [
   'gs', // ghost start
   'gc', // ghost cage
   'ge', // ghost exit
-  'e', //empty
+  'e', // empty
+  't', // teleporter
 ] as const;
 
 type TemplateCellValue = typeof templateCellValues[number];
 
-type MapTemplateCellMeaning = 'playerCharacter' | 'barrier' | 'pellet' | 'powerPellet' | 'ghostCage' | 'ghostStart' | 'ghostExit' | 'empty';
+type MapTemplateCellMeaning = 'playerCharacter' | 'barrier' | 'pellet' | 'powerPellet' | 'ghostCage' | 'ghostStart' | 'ghostExit' | 'empty' | 'teleporter';
 
 export const mapTemplateCellValueMap: Record<MapTemplateCellMeaning, TemplateCellValue> = {
   playerCharacter: 'c',
@@ -22,6 +23,7 @@ export const mapTemplateCellValueMap: Record<MapTemplateCellMeaning, TemplateCel
   ghostCage: 'gc',
   ghostExit: 'ge',
   empty: 'e',
+  teleporter: 't',
 };
 
 export type MapTemplate = Array<Array<TemplateCellValue>>;
