@@ -6,9 +6,9 @@ import { useAnimationFrame } from "./utils/useAnimationFrame";
 import {MapTemplate} from "./types/MapTemplate";
 
 // config
-const gridCellSize = 20;
+const gridCellSize = 15;
 
-// create user interface for creating these templates so that it goes quicker
+// TODO: create user interface for creating these templates so that it goes quicker
 
 const mapTemplate: MapTemplate = [
  ['b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b'],
@@ -53,7 +53,7 @@ const map = getMapFromTemplate(mapTemplate, gridCellSize);
 // the board should be passed the players, and place them on the map
 // that way the board can reset itself when the player touches a ghost... it can set the players position and the npcs position
 
-const characterRadius = gridCellSize / 2 - 1;
+const characterRadius = gridCellSize - 1;
 
 // characters should expose a setPosition function that allows the board to set their positions on game mode change
 // they should not set their positions in their constructor anymore

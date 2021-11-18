@@ -57,6 +57,8 @@ export class Character extends CollidableObject {
     return nextPosition;
   }
 
+  // refactor this to include the check for collision...
+  // need to make the barriers a CollidableObject?  They should have a hitbox that we check?
   public isNextMoveAllowed = (position = this.position, direction: Direction) => {
     let isAllowed = false;
     const hitboxFromNextPosition = this.getHitbox(this.getNextPosition(position, direction), this.radius);

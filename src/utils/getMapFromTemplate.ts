@@ -1,30 +1,46 @@
 import { Map } from "../types/Map";
 import { Position } from "../types/Position";
-import { Barrier } from '../types/Barrier';
-import { MapTemplate, mapTemplateCellValueMap } from '../types/MapTemplate';
+import {Barrier, BarrierVariant} from '../types/Barrier';
+import {MapTemplate, mapTemplateCellValueMap, TemplateCellValue} from '../types/MapTemplate';
 import { Pellet } from "../classes/Pellet/Pellet";
 import {Teleporter} from "../classes/Teleporter/Teleporter";
 import {CollidableObject} from "../types/CollidableObject";
+import { getBarrierVariant } from "./getBarrierVariant";
 
-const removeDuplicateBarriers = (barriers: Array<Barrier>): Array<Barrier> => barriers.filter((barrier, index, array) => (
-  1 === array.filter((lin) => (
-    barrier.start.x === lin.start.x && barrier.start.y === lin.start.y && barrier.end.x === lin.end.x && barrier.end.y === lin.end.y
-  )).length
-));
+type AdjacentCell = 'topLeft' | 'top' | 'topRight' | 'right' | 'bottomRight' | 'bottom' | 'bottomLeft' | 'left';
 
-const getBarrierLinesFromMidPointCoordinate = ({ x, y } : Position, blockSize: number): Array<Barrier> => {
-  const halfBlockSize = blockSize / 2;
-  const topLine = { start: { x: x -  halfBlockSize, y: y - halfBlockSize }, end: { x: x + halfBlockSize, y: y - halfBlockSize } };
-  const rightLine = { start: { x: x + halfBlockSize, y: y - halfBlockSize }, end: { x: x + halfBlockSize, y: y + halfBlockSize } };
-  const bottomLine = { start: { x: x - halfBlockSize, y: y + halfBlockSize }, end: { x: x + halfBlockSize, y: y + halfBlockSize } };
-  const leftLine = { start: { x: x - halfBlockSize, y: y - halfBlockSize }, end: { x: x - halfBlockSize, y: y + halfBlockSize } };
-  return [topLine, rightLine, bottomLine, leftLine];
+type AdjacentCellValueMap = Record<AdjacentCell, TemplateCellValue | null>;
+
+const getBarrierLine = ({ x, y }: Position, lineType: BarrierVariant, gridCellSize: number): Array<Barrier> | undefined => {
+  const halfGridCellSize = gridCellSize / 2;
+  switch (lineType) {
+    case "vertical":
+      return [{ start: { x, y: y - halfGridCellSize }, end: { x, y: y + halfGridCellSize } }];
+      break;
+    case "horizontal":
+      return [{ start: { x: x - halfGridCellSize, y }, end: { x: x + halfGridCellSize, y } }];
+      break;
+    case "top-right-corner":
+      return [{ start: { x: x - halfGridCellSize, y }, end: { x, y } }, { start: { x, y }, end: { x, y: y + halfGridCellSize } }];
+      break;
+    case "bottom-right-corner":
+      return [{ start: { x: x - halfGridCellSize, y }, end: { x, y } }, { start: { x, y: y - halfGridCellSize }, end: { x, y } }];
+      break;
+    case "bottom-left-corner":
+      return [{ start: { x, y: y - halfGridCellSize }, end: { x, y } }, { start: { x, y }, end: { x: x + halfGridCellSize, y } }];
+      break;
+    case "top-left-corner":
+      return [{ start: { x, y }, end: { x, y: y + halfGridCellSize } }, { start: { x, y }, end: { x: x + halfGridCellSize, y } }];
+      break;
+    default:
+      // do nothing
+      break;
+  }
 }
 
-// create a function that takes a cell value, gridCellSize, rowIndex, columnIndex, and pushes the correct things into the correct places?
+// TODO: Cleanup barrier creation, give barriers hitboxes here so that they become CollidableObjects and we can use the checkForCollision function on them
 
 export const getMapFromTemplate = (mapTemplate: MapTemplate, gridCellSize: number): Map => {
-  // need to draw the outer barriers based on canvas size, as the canvas may not be a square
   let barriers: Array<Barrier> = [];
   const navigableCellCenterPositions: Array<Position> = [];
   let initialPlayerPosition = { x: 0, y: 0 };
@@ -37,14 +53,7 @@ export const getMapFromTemplate = (mapTemplate: MapTemplate, gridCellSize: numbe
       const x = columnIndex === 0 ? gridCellSize / 2 : gridCellSize / 2 + gridCellSize * columnIndex;
       const y = rowIndex === 0 ? gridCellSize / 2 : gridCellSize / 2 + gridCellSize * rowIndex;
 
-      //  if columnIndex === row.length - 1 and is not a barrier, should draw a line to the right of it
-      if (columnIndex === row.length - 1 && cell !== mapTemplateCellValueMap.teleporter) barriers.push({ start: { x: x + gridCellSize / 2, y: y - gridCellSize / 2  }, end: { x: x + gridCellSize / 2, y: y + gridCellSize / 2 } })
-      //  if columnIndex === 0 and is not a barrier, should draw a line to the left of it
-      if (columnIndex === 0 && cell !== mapTemplateCellValueMap.teleporter) barriers.push({ start: { x: x - gridCellSize / 2, y: y - gridCellSize / 2  }, end: { x: x - gridCellSize / 2, y: y + gridCellSize / 2 } })
-      //  if rowIndex === 0 and it is not a barrier, should draw a line above it
-      if (rowIndex === 0) barriers.push({ start: { x: x - gridCellSize / 2, y: y - gridCellSize / 2  }, end: { x: x + gridCellSize / 2, y: y - gridCellSize / 2 } })
-      //  if rowIndex === mapTemplate.length -1 and it is not a barrier, should draw a line below it
-      if (rowIndex === mapTemplate.length - 1) barriers.push({ start: { x: x - gridCellSize / 2, y: y + gridCellSize / 2  }, end: { x: x + gridCellSize / 2, y: y + gridCellSize / 2 } })
+      // TODO: Identify barriers that are on the edges of the map and give them a double outline
 
       if (columnIndex === 0 && cell === mapTemplateCellValueMap.teleporter) teleporters.push(new Teleporter({ x: x - gridCellSize, y }));
       if (columnIndex === row.length - 1 && cell === mapTemplateCellValueMap.teleporter) teleporters.push(new Teleporter({ x: x + gridCellSize, y }));
@@ -56,14 +65,29 @@ export const getMapFromTemplate = (mapTemplate: MapTemplate, gridCellSize: numbe
           navigableCellCenterPositions.push({x, y});
           break;
         case mapTemplateCellValueMap.barrier:
-          [...getBarrierLinesFromMidPointCoordinate({x, y}, gridCellSize)].forEach((line) => barriers.push(line));
+          // check the adjacent cells to understand what kind of line this should be
+          const adjacentCells: AdjacentCellValueMap = {
+            top: !!mapTemplate[rowIndex - 1] ? mapTemplate[rowIndex - 1][columnIndex] : null,
+            topRight: !!mapTemplate[rowIndex - 1] ? mapTemplate[rowIndex - 1][columnIndex + 1] || null : null,
+            right: mapTemplate[rowIndex][columnIndex + 1] || null,
+            bottomRight: !!mapTemplate[rowIndex + 1] ? mapTemplate[rowIndex + 1][columnIndex + 1] || null : null,
+            bottom: !!mapTemplate[rowIndex + 1] ? mapTemplate[rowIndex + 1][columnIndex] : null,
+            bottomLeft: !!mapTemplate[rowIndex + 1] ? mapTemplate[rowIndex + 1][columnIndex - 1] || null : null,
+            left: mapTemplate[rowIndex][columnIndex - 1] || null,
+            topLeft: !!mapTemplate[rowIndex - 1] ? mapTemplate[rowIndex - 1][columnIndex - 1] || null : null,
+          };
+
+          const barrierVariant = getBarrierVariant(adjacentCells);
+
+          if (barrierVariant) getBarrierLine({ x, y }, barrierVariant, gridCellSize)?.forEach((barrier) => barriers.push(barrier));
+
           break;
         case mapTemplateCellValueMap.pellet:
-          pellets.push(new Pellet({x, y}, gridCellSize / 10));
+          pellets.push(new Pellet({x, y}, gridCellSize / 4));
           navigableCellCenterPositions.push({x, y});
           break;
         case mapTemplateCellValueMap.powerPellet:
-          pellets.push(new Pellet({x, y}, gridCellSize / 5, true));
+          pellets.push(new Pellet({x, y}, gridCellSize / 2, true));
           navigableCellCenterPositions.push({x, y});
           break;
         case mapTemplateCellValueMap.empty:
@@ -85,8 +109,6 @@ export const getMapFromTemplate = (mapTemplate: MapTemplate, gridCellSize: numbe
       }
     })
   });
-
-  barriers = removeDuplicateBarriers(barriers);
 
   return {
     gridCellSize,

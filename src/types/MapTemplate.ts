@@ -10,7 +10,7 @@ const templateCellValues = [
   't', // teleporter
 ] as const;
 
-type TemplateCellValue = typeof templateCellValues[number];
+export type TemplateCellValue = typeof templateCellValues[number];
 
 type MapTemplateCellMeaning = 'playerCharacter' | 'barrier' | 'pellet' | 'powerPellet' | 'ghostCage' | 'ghostStart' | 'ghostExit' | 'empty' | 'teleporter';
 
@@ -27,3 +27,18 @@ export const mapTemplateCellValueMap: Record<MapTemplateCellMeaning, TemplateCel
 };
 
 export type MapTemplate = Array<Array<TemplateCellValue>>;
+
+const adjacentCells = [
+  'topLeft',
+  'top',
+  'topRight',
+  'right',
+  'bottomRight',
+  'bottom',
+  'bottomLeft',
+  'left',
+] as const;
+
+export type AdjacentCell = typeof adjacentCells[number];
+
+export type AdjacentCellValueMap = Record<AdjacentCell, TemplateCellValue | null>;

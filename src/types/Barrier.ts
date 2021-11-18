@@ -8,3 +8,5 @@ export type Barrier = {
     y: number;
   };
 };
+
+export type BarrierVariant = 'vertical' | 'horizontal' | 'top-right-corner' | 'bottom-right-corner' | 'bottom-left-corner' | 'top-left-corner';
