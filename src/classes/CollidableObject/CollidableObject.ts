@@ -1,5 +1,7 @@
-import {Position} from "../../types/Position";
-import {Hitbox} from "../../types/Hitbox";
+import { Position } from "../../types/Position";
+import { Hitbox } from "../../types/Hitbox";
+
+// TODO: Make this a bit more abstract so that Barriers can inherit from this?
 
 export class CollidableObject {
   position: Position;
@@ -14,7 +16,7 @@ export class CollidableObject {
       right: position.x + radius,
       bottom: position.y + radius,
       left: position.x - radius,
-    }
+    };
   }
 
   public getHitbox(position = this.position, radius = this.radius) {
@@ -23,7 +25,7 @@ export class CollidableObject {
       right: position.x + radius,
       bottom: position.y + radius,
       left: position.x - radius,
-    }
+    };
   }
 
   public setHitbox(position = this.position, radius = this.radius) {

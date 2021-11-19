@@ -9,4 +9,10 @@ export type Barrier = {
   };
 };
 
-export type BarrierVariant = 'vertical' | 'horizontal' | 'top-right-corner' | 'bottom-right-corner' | 'bottom-left-corner' | 'top-left-corner';
+export type BarrierVariant =
+  | "vertical"
+  | "horizontal"
+  | "top-right-corner"
+  | "bottom-right-corner"
+  | "bottom-left-corner"
+  | "top-left-corner";
