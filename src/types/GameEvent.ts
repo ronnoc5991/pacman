@@ -1,5 +1,3 @@
-// list of events that the board should tell the game Controller about
-
 export const gameEvents = [
   "pelletEaten",
   "powerPelletEaten",
