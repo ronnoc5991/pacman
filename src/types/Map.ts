@@ -5,10 +5,7 @@ import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
 
 export type Map = {
   gridCellSize: number;
-  barriers: {
-    horizontal: Array<Barrier>;
-    vertical: Array<Barrier>;
-  };
+  barriers: Array<Barrier>;
   navigableCellCenterPositions: Array<Position>;
   pellets: Array<Pellet>;
   initialPlayerPosition: Position;

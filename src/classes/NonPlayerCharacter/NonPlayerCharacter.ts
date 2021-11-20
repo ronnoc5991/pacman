@@ -4,25 +4,18 @@ import { Map } from "../../types/Map";
 import { directions, Direction } from "../../types/Direction";
 
 export class NonPlayerCharacter extends Character {
-  navigableCellCenterPositions: Array<Position>;
-  gridCellSize: number;
+  navigableCellCenterPositions: Array<Position> = [];
+  gridCellSize: number = 0;
   directions: ReadonlyArray<Direction>;
   backwards: Direction;
-  playerCharacter: Character;
+  getPlayerCharacterPosition: () => Position = () => ({ x: 0, y: 0 });
 
-  constructor(
-    radius: number,
-    position: Position,
-    velocity: number,
-    map: Map,
-    playerCharacter: Character
-  ) {
-    super(position, radius, velocity, "left", map);
-    this.playerCharacter = playerCharacter;
+  // maybe the npcs can be passed an array of navigable positions?, this would make them somewhat omnipotent
+
+  constructor(radius: number, velocity: number) {
+    super({ x: 0, y: 0 }, radius, velocity);
     this.directions = directions;
     this.backwards = "right";
-    this.navigableCellCenterPositions = map.navigableCellCenterPositions;
-    this.gridCellSize = map.gridCellSize;
   }
 
   // can be called by the board when the game mode changes to scatter
@@ -113,8 +106,8 @@ export class NonPlayerCharacter extends Character {
         return {
           ...position,
           distanceToPlayerCharacter: Math.sqrt(
-            Math.pow(position.x - this.playerCharacter.position.x, 2) +
-              Math.pow(position.y - this.playerCharacter.position.y, 2)
+            Math.pow(position.x - this.getPlayerCharacterPosition().x, 2) +
+              Math.pow(position.y - this.getPlayerCharacterPosition().y, 2)
           ),
         };
       });
@@ -138,6 +131,7 @@ export class NonPlayerCharacter extends Character {
   }
 
   public updatePosition() {
+    // call this loop equal to the velocity of our character
     if (this.checkIfAtPossibleIntersection()) {
       this.direction = this.getNewDirection();
       this.setBackwards();
@@ -146,5 +140,15 @@ export class NonPlayerCharacter extends Character {
       this.position = this.getNextPosition();
       this.setHitbox();
     }
+  }
+
+  public initialize(
+    getPlayerCharacterPosition: () => Position,
+    navigableCellCenterPositions: Array<Position>,
+    gridCellSize: number
+  ) {
+    this.getPlayerCharacterPosition = getPlayerCharacterPosition;
+    this.navigableCellCenterPositions = navigableCellCenterPositions;
+    this.gridCellSize = gridCellSize;
   }
 }

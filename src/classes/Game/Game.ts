@@ -3,6 +3,10 @@ import { Maze } from "../Maze/Maze";
 import { GameMode, gameModeMap } from "../../types/GameMode";
 import { GameEvent } from "../../types/GameEvent";
 import { GameConfig } from "../../types/gameConfig";
+import { Map } from "../../types/Map";
+import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
+import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
+import { getMapFromTemplate } from "../../utils/getMapFromTemplate";
 
 export class Game {
   config: GameConfig;
@@ -11,17 +15,34 @@ export class Game {
   score: number;
   roundNumber: number;
   livesCount: number;
+  currentMap: Map;
   maze: Maze | null = null;
+  playerCharacter: PlayerCharacter;
+  nonPlayerCharacters: Array<NonPlayerCharacter>;
   modeChangingTimeout: null | ReturnType<typeof setTimeout> = setTimeout(
     () => {}
   );
 
-  constructor(gameConfig: GameConfig) {
-    this.config = gameConfig;
+  // game should parse the current map, then pass that to the maze and characters?
+
+  constructor(config: GameConfig) {
+    this.config = config;
+    this.currentMap = getMapFromTemplate(
+      config.mapTemplate,
+      config.gridCellSize
+    );
     this.mode = this.defaultMode;
     this.score = 0;
     this.roundNumber = 0;
     this.livesCount = 3;
+    this.playerCharacter = new PlayerCharacter(config.gridCellSize - 1, 1);
+    this.nonPlayerCharacters = Array.from({ length: 1 }).map(
+      () => new NonPlayerCharacter(config.gridCellSize - 1, 1)
+    );
+    this.config.canvas.height =
+      this.config.gridCellSize * this.config.mapTemplate.length;
+    this.config.canvas.width =
+      this.config.gridCellSize * this.config.mapTemplate[0].length;
   }
 
   private setMode(mode: GameMode) {
@@ -72,8 +93,12 @@ export class Game {
 
   private initializeNewMaze() {
     // TODO: be able to select the correct config object based on round number, mazes should vary in full game
-    this.maze = new Maze(this.config, (event: GameEvent) =>
-      this.onEvent(event)
+    this.maze = new Maze(
+      this.currentMap,
+      this.config.canvas,
+      (event: GameEvent) => this.onEvent(event),
+      this.playerCharacter,
+      this.nonPlayerCharacters
     );
     this.maze.initialize();
   }

@@ -1,13 +1,5 @@
-export type Barrier = {
-  start: {
-    x: number;
-    y: number;
-  };
-  end: {
-    x: number;
-    y: number;
-  };
-};
+import { Hitbox } from "./Hitbox";
+import { Position } from "./Position";
 
 export type BarrierVariant =
   | "vertical"
@@ -16,3 +8,10 @@ export type BarrierVariant =
   | "bottom-right-corner"
   | "bottom-left-corner"
   | "top-left-corner";
+
+export type Barrier = {
+  variant: BarrierVariant;
+  hitboxes: Array<Hitbox>;
+  position: Position;
+  // could also have isOutlined boolean here?
+};

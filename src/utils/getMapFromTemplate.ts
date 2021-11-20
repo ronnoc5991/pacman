@@ -2,14 +2,14 @@ import { Map } from "../types/Map";
 import { Position } from "../types/Position";
 import { Barrier } from "../types/Barrier";
 import {
+  AdjacentCellValueMap,
   MapTemplate,
   mapTemplateCellValueMap,
   TemplateCellValue,
 } from "../types/MapTemplate";
 import { Pellet } from "../classes/Pellet/Pellet";
 import { Teleporter } from "../classes/Teleporter/Teleporter";
-import { getBarrierVariant } from "./getBarrierVariant";
-import { getBarrierLine } from "./getBarrierLine";
+import { getBarrier } from "./getBarrier";
 import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
 
 // TODO: Write function that searches mapTemplate for outer edges and creates an outline for them
@@ -25,18 +25,6 @@ const getMapOutlineLines = (mapTemplate: MapTemplate): Array<Barrier> => {
   });
   return [];
 };
-
-type AdjacentCell =
-  | "topLeft"
-  | "top"
-  | "topRight"
-  | "right"
-  | "bottomRight"
-  | "bottom"
-  | "bottomLeft"
-  | "left";
-
-type AdjacentCellValueMap = Record<AdjacentCell, TemplateCellValue | null>;
 
 export const getMapFromTemplate = (
   mapTemplate: MapTemplate,
@@ -70,34 +58,31 @@ export const getMapFromTemplate = (
         case mapTemplateCellValueMap.barrier:
           // check the adjacent cells to understand what kind of line this should be
           const adjacentCells: AdjacentCellValueMap = {
-            top: !!mapTemplate[rowIndex - 1]
+            topMiddle: !!mapTemplate[rowIndex - 1]
               ? mapTemplate[rowIndex - 1][columnIndex]
               : null,
             topRight: !!mapTemplate[rowIndex - 1]
               ? mapTemplate[rowIndex - 1][columnIndex + 1] || null
               : null,
-            right: mapTemplate[rowIndex][columnIndex + 1] || null,
+            middleRight: mapTemplate[rowIndex][columnIndex + 1] || null,
             bottomRight: !!mapTemplate[rowIndex + 1]
               ? mapTemplate[rowIndex + 1][columnIndex + 1] || null
               : null,
-            bottom: !!mapTemplate[rowIndex + 1]
+            bottomMiddle: !!mapTemplate[rowIndex + 1]
               ? mapTemplate[rowIndex + 1][columnIndex]
               : null,
             bottomLeft: !!mapTemplate[rowIndex + 1]
               ? mapTemplate[rowIndex + 1][columnIndex - 1] || null
               : null,
-            left: mapTemplate[rowIndex][columnIndex - 1] || null,
+            middleLeft: mapTemplate[rowIndex][columnIndex - 1] || null,
             topLeft: !!mapTemplate[rowIndex - 1]
               ? mapTemplate[rowIndex - 1][columnIndex - 1] || null
               : null,
           };
 
-          const barrierVariant = getBarrierVariant(adjacentCells);
+          const barrier = getBarrier({ x, y }, adjacentCells, gridCellSize);
 
-          if (barrierVariant)
-            getBarrierLine({ x, y }, barrierVariant, gridCellSize).forEach(
-              (barrier: Barrier) => barriers.push(barrier)
-            );
+          if (barrier) barriers.push(barrier);
 
           break;
         case mapTemplateCellValueMap.pellet:
@@ -130,12 +115,7 @@ export const getMapFromTemplate = (
 
   return {
     gridCellSize,
-    barriers: {
-      horizontal: barriers.filter(
-        (barrier) => barrier.start.y === barrier.end.y
-      ),
-      vertical: barriers.filter((barrier) => barrier.start.x === barrier.end.x),
-    },
+    barriers,
     navigableCellCenterPositions,
     initialPlayerPosition,
     initialNonPlayerCharacterPositions,

@@ -2,6 +2,7 @@ import { Position } from "../../types/Position";
 import { Hitbox } from "../../types/Hitbox";
 
 // TODO: Make this a bit more abstract so that Barriers can inherit from this?
+// This should just consist of a hitbox, nothing more
 
 export class CollidableObject {
   position: Position;

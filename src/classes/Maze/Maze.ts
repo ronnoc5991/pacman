@@ -2,21 +2,31 @@ import { Map } from "../../types/Map";
 import { Barrier } from "../../types/Barrier";
 import { Position } from "../../types/Position";
 import { drawCircle } from "../../utils/drawCircle";
-import { checkIfObjectsAreColliding } from "../../utils/checkIfObjectsAreColliding";
+import {
+  areEdgesColliding,
+  checkIfObjectsAreColliding,
+} from "../../utils/checkIfObjectsAreColliding";
 import { Pellet } from "../Pellet/Pellet";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 import { GameMode } from "../../types/GameMode";
 import { GameEvent, gameEventMap, gameEvents } from "../../types/GameEvent";
-import { getMapFromTemplate } from "../../utils/getMapFromTemplate";
-import { GameConfig } from "../../types/gameConfig";
 import { drawBarrier } from "../../utils/drawBarrier";
+import { Hitbox } from "../../types/Hitbox";
+
+// Maze consists of barriers and pellets
+// characters are PLACED in the maze, they are not part of the maze
+// Characters can query the maze for information
+// Non player Characters can query for the playerCharacter's position to use in their own calculations
+// All characters need to know if they can proceed in their current direction
+// which is to say, can they go to a certain location?
 
 export class Maze {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
   barriers: Array<Barrier>;
+  barrierHitboxes: Array<Hitbox>;
   pellets: Array<Pellet>;
   playerCharacter: PlayerCharacter;
   initialPlayerCharacterPosition: Position;
@@ -27,40 +37,26 @@ export class Maze {
   map: Map;
 
   constructor(
-    { mapTemplate, gridCellSize, canvas }: GameConfig,
-    onGameEvent: (event: GameEvent) => void
+    map: Map,
+    canvas: HTMLCanvasElement,
+    onGameEvent: (event: GameEvent) => void,
+    playerCharacter: PlayerCharacter,
+    nonPlayerCharacters: Array<NonPlayerCharacter>
   ) {
-    this.map = getMapFromTemplate(mapTemplate, gridCellSize);
+    this.map = map;
     this.canvas = canvas;
     this.context = canvas.getContext("2d") as CanvasRenderingContext2D;
-    this.barriers = [
-      ...this.map.barriers.horizontal,
-      ...this.map.barriers.vertical,
-    ];
+    this.barriers = this.map.barriers;
+    this.barrierHitboxes = this.barriers
+      .map((barrier) => barrier.hitboxes)
+      .flat();
     this.pellets = this.map.pellets;
-    this.playerCharacter = new PlayerCharacter(
-      gridCellSize - 1,
-      this.map.initialPlayerPosition,
-      1,
-      this.map
-    );
-    this.nonPlayerCharacters = this.map.initialNonPlayerCharacterPositions.map(
-      (position) => {
-        return new NonPlayerCharacter(
-          gridCellSize - 1,
-          position,
-          1,
-          this.map,
-          this.playerCharacter
-        );
-      }
-    );
-    this.characters = [this.playerCharacter, ...this.nonPlayerCharacters];
     this.initialPlayerCharacterPosition = this.map.initialPlayerPosition;
     this.teleporters = this.map.teleporters;
-    this.canvas.height = gridCellSize * mapTemplate.length;
-    this.canvas.width = gridCellSize * mapTemplate[0].length;
     this.onGameEvent = onGameEvent;
+    this.playerCharacter = playerCharacter;
+    this.nonPlayerCharacters = nonPlayerCharacters;
+    this.characters = [this.playerCharacter, ...this.nonPlayerCharacters];
   }
 
   private clearCanvas() {
@@ -123,9 +119,10 @@ export class Maze {
     // should update non Player Characters with new game mode, as their behavior changes based on it
   }
 
-  private drawCanvas() {
-    // TODO: Barriers should have hitboxes just like Collidable Objects, this way we can give corner barriers square hitboxes but draw them as rounded
-    this.barriers.forEach((barrier) => drawBarrier(barrier, this.context));
+  private renderOnCanvas() {
+    this.barriers.forEach((barrier) =>
+      drawBarrier(barrier, this.context, this.map.gridCellSize)
+    );
     this.pellets.forEach((pellet) => {
       if (pellet.hasBeenEaten) return;
       drawCircle(this.context, pellet.position, pellet.radius);
@@ -135,18 +132,41 @@ export class Maze {
     );
   }
 
+  private resetCharacterPositions() {
+    this.playerCharacter.setPosition(this.map.initialPlayerPosition);
+    this.nonPlayerCharacters.forEach((character, index) =>
+      character.setPosition(this.map.initialNonPlayerCharacterPositions[index])
+    );
+  }
+
+  public isPositionAvailable(hitbox: Hitbox) {
+    return this.barrierHitboxes.every((barrierHitbox) => {
+      return !areEdgesColliding(barrierHitbox, hitbox);
+    });
+  }
+
   public reset() {
-    this.characters.forEach((character) => character.resetPosition());
+    this.resetCharacterPositions();
   }
 
   public update() {
     this.clearCanvas();
     this.updatePositions();
     this.handleCollisions();
-    this.drawCanvas();
+    this.renderOnCanvas();
   }
 
   public initialize() {
-    this.playerCharacter.initialize();
+    this.resetCharacterPositions();
+    this.playerCharacter.initialize((hitbox) =>
+      this.isPositionAvailable(hitbox)
+    ); // could pass it things here?
+    this.nonPlayerCharacters.forEach((character) =>
+      character.initialize(
+        () => this.playerCharacter.position,
+        this.map.navigableCellCenterPositions,
+        this.map.gridCellSize
+      )
+    );
   }
 }
