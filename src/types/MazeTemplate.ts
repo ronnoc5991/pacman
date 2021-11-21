@@ -12,7 +12,7 @@ const templateCellValues = [
 
 export type TemplateCellValue = typeof templateCellValues[number];
 
-type MapTemplateCellMeaning =
+type MazeTemplateCellMeaning =
   | "playerCharacter"
   | "barrier"
   | "pellet"
@@ -23,8 +23,8 @@ type MapTemplateCellMeaning =
   | "empty"
   | "teleporter";
 
-export const mapTemplateCellValueMap: Record<
-  MapTemplateCellMeaning,
+export const mazeTemplateCellValueMap: Record<
+  MazeTemplateCellMeaning,
   TemplateCellValue
 > = {
   playerCharacter: "c",
@@ -38,7 +38,7 @@ export const mapTemplateCellValueMap: Record<
   teleporter: "t",
 };
 
-export type MapTemplate = Array<Array<TemplateCellValue>>;
+export type MazeTemplate = Array<Array<TemplateCellValue>>;
 
 const adjacentCells = [
   "topLeft",

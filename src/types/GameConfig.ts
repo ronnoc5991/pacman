@@ -1,7 +1,7 @@
-import { MapTemplate } from "./MapTemplate";
+import { MazeTemplate } from "./MazeTemplate";
 
 export type GameConfig = {
   gridCellSize: number;
-  mapTemplate: MapTemplate;
+  mapTemplate: MazeTemplate;
   canvas: HTMLCanvasElement;
 };

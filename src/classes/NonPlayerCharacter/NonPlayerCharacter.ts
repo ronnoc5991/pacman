@@ -1,7 +1,15 @@
 import { Character } from "../Character/Character";
 import { Position } from "../../types/Position";
-import { Map } from "../../types/Map";
 import { directions, Direction } from "../../types/Direction";
+import { Hitbox } from "../../types/Hitbox";
+import { getHitbox } from "../../utils/getHitbox";
+
+// NPC's responsibilities:
+// Pursue PC when game is in pursue mode
+// Flee from PC when game is in flee mode
+// Return home when eaten
+// Update position based on PC position
+//
 
 export class NonPlayerCharacter extends Character {
   navigableCellCenterPositions: Array<Position> = [];
@@ -9,11 +17,10 @@ export class NonPlayerCharacter extends Character {
   directions: ReadonlyArray<Direction>;
   backwards: Direction;
   getPlayerCharacterPosition: () => Position = () => ({ x: 0, y: 0 });
+  isPositionAvailable: ((hitbox: Hitbox) => boolean) | null = null;
 
-  // maybe the npcs can be passed an array of navigable positions?, this would make them somewhat omnipotent
-
-  constructor(radius: number, velocity: number) {
-    super({ x: 0, y: 0 }, radius, velocity);
+  constructor(size: number, velocity: number) {
+    super({ x: 0, y: 0 }, size, velocity);
     this.directions = directions;
     this.backwards = "right";
   }
@@ -131,12 +138,17 @@ export class NonPlayerCharacter extends Character {
   }
 
   public updatePosition() {
+    if (this.isPositionAvailable === null) return;
     // call this loop equal to the velocity of our character
     if (this.checkIfAtPossibleIntersection()) {
       this.direction = this.getNewDirection();
       this.setBackwards();
     }
-    if (this.isNextMoveAllowed(this.position, this.direction)) {
+    if (
+      this.isPositionAvailable(
+        getHitbox(this.getNextPosition(this.direction), this.size)
+      )
+    ) {
       this.position = this.getNextPosition();
       this.setHitbox();
     }
@@ -145,10 +157,12 @@ export class NonPlayerCharacter extends Character {
   public initialize(
     getPlayerCharacterPosition: () => Position,
     navigableCellCenterPositions: Array<Position>,
-    gridCellSize: number
+    gridCellSize: number,
+    isPositionAvailable: (hitbox: Hitbox) => boolean
   ) {
     this.getPlayerCharacterPosition = getPlayerCharacterPosition;
     this.navigableCellCenterPositions = navigableCellCenterPositions;
     this.gridCellSize = gridCellSize;
+    this.isPositionAvailable = isPositionAvailable;
   }
 }

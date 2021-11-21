@@ -2,11 +2,18 @@ import { useAnimationFrame } from "../../utils/useAnimationFrame";
 import { Maze } from "../Maze/Maze";
 import { GameMode, gameModeMap } from "../../types/GameMode";
 import { GameEvent } from "../../types/GameEvent";
-import { GameConfig } from "../../types/gameConfig";
-import { Map } from "../../types/Map";
+import { GameConfig } from "../../types/GameConfig";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
-import { getMapFromTemplate } from "../../utils/getMapFromTemplate";
+import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
+import { Map } from "../../types/Map";
+
+// The Game's responsibilities:
+// Keep score (incl: lives, round, points)
+// Create Characters
+// Parse Configuration to Render Maze/Round
+// Place the Characters in the Maze/Round
+// Listen for game events and react accordingly (updating score/game mode)
 
 export class Game {
   config: GameConfig;
@@ -15,7 +22,7 @@ export class Game {
   score: number;
   roundNumber: number;
   livesCount: number;
-  currentMap: Map;
+  currentMaze: Map;
   maze: Maze | null = null;
   playerCharacter: PlayerCharacter;
   nonPlayerCharacters: Array<NonPlayerCharacter>;
@@ -23,11 +30,9 @@ export class Game {
     () => {}
   );
 
-  // game should parse the current map, then pass that to the maze and characters?
-
   constructor(config: GameConfig) {
     this.config = config;
-    this.currentMap = getMapFromTemplate(
+    this.currentMaze = getMazeFromTemplate(
       config.mapTemplate,
       config.gridCellSize
     );
@@ -35,9 +40,12 @@ export class Game {
     this.score = 0;
     this.roundNumber = 0;
     this.livesCount = 3;
-    this.playerCharacter = new PlayerCharacter(config.gridCellSize - 1, 1);
+    this.playerCharacter = new PlayerCharacter(
+      (config.gridCellSize - 1) * 2,
+      1
+    );
     this.nonPlayerCharacters = Array.from({ length: 1 }).map(
-      () => new NonPlayerCharacter(config.gridCellSize - 1, 1)
+      () => new NonPlayerCharacter((config.gridCellSize - 1) * 2, 1)
     );
     this.config.canvas.height =
       this.config.gridCellSize * this.config.mapTemplate.length;
@@ -63,7 +71,6 @@ export class Game {
     switch (event) {
       case "pelletEaten":
         this.score += 10;
-        console.log(this.score);
         break;
       case "powerPelletEaten":
         this.score += 50;
@@ -75,10 +82,9 @@ export class Game {
       case "playerCharacterEaten":
         this.livesCount -= 1;
         this.maze?.reset();
-        console.log(`Lives Count: ${this.livesCount}`);
         if (this.livesCount === 0) {
           console.log("game over");
-          this.startNewRound(); // should not start a new round... should instead reset score, livesCount and round number
+          this.startNewRound(); // TODO: should not start a new round... should instead reset score, livesCount and round number
         }
         break;
       case "allPelletsEaten":
@@ -94,7 +100,7 @@ export class Game {
   private initializeNewMaze() {
     // TODO: be able to select the correct config object based on round number, mazes should vary in full game
     this.maze = new Maze(
-      this.currentMap,
+      this.currentMaze,
       this.config.canvas,
       (event: GameEvent) => this.onEvent(event),
       this.playerCharacter,

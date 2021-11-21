@@ -1,4 +1,4 @@
-import { Barrier } from "../types/Barrier";
+import { Barrier } from "../classes/Barrier/Barrier";
 
 // TODO: Add outlines to outer barriers/barriers that need them
 

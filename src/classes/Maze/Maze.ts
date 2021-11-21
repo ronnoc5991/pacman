@@ -1,26 +1,26 @@
-import { Map } from "../../types/Map";
-import { Barrier } from "../../types/Barrier";
 import { Position } from "../../types/Position";
 import { drawCircle } from "../../utils/drawCircle";
 import {
   areEdgesColliding,
-  checkIfObjectsAreColliding,
-} from "../../utils/checkIfObjectsAreColliding";
+  testForCollision,
+} from "../../utils/collisionDetection";
 import { Pellet } from "../Pellet/Pellet";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 import { GameMode } from "../../types/GameMode";
-import { GameEvent, gameEventMap, gameEvents } from "../../types/GameEvent";
+import { GameEvent, gameEventMap } from "../../types/GameEvent";
 import { drawBarrier } from "../../utils/drawBarrier";
 import { Hitbox } from "../../types/Hitbox";
+import { Barrier } from "../Barrier/Barrier";
+import { Map } from "../../types/Map";
 
 // Maze consists of barriers and pellets
 // characters are PLACED in the maze, they are not part of the maze
 // Characters can query the maze for information
 // Non player Characters can query for the playerCharacter's position to use in their own calculations
-// All characters need to know if they can proceed in their current direction
-// which is to say, can they go to a certain location?
+
+// TODO: Barriers should be drawn only once on a separate canvas, no need to redraw them so often
 
 export class Maze {
   canvas: HTMLCanvasElement;
@@ -74,9 +74,7 @@ export class Maze {
     this.pellets
       .filter((pellet) => !pellet.hasBeenEaten)
       .forEach((pellet) => {
-        if (
-          checkIfObjectsAreColliding(this.playerCharacter, pellet, "center")
-        ) {
+        if (testForCollision(this.playerCharacter, pellet, "center")) {
           pellet.hasBeenEaten = true;
           this.onGameEvent(
             pellet.isPowerPellet
@@ -88,11 +86,7 @@ export class Maze {
 
     if (
       this.nonPlayerCharacters.filter((nonPlayerCharacter) =>
-        checkIfObjectsAreColliding(
-          this.playerCharacter,
-          nonPlayerCharacter,
-          "overlap"
-        )
+        testForCollision(this.playerCharacter, nonPlayerCharacter, "overlap")
       ).length > 0
     ) {
       this.onGameEvent(gameEventMap.playerCharacterEaten);
@@ -102,7 +96,7 @@ export class Maze {
     this.characters.forEach((character) => {
       const indexOfCollidedTeleporter = this.teleporters.findIndex(
         (teleporter) => {
-          return checkIfObjectsAreColliding(character, teleporter, "center");
+          return testForCollision(character, teleporter, "center");
         }
       );
       if (indexOfCollidedTeleporter > -1) {
@@ -125,10 +119,10 @@ export class Maze {
     );
     this.pellets.forEach((pellet) => {
       if (pellet.hasBeenEaten) return;
-      drawCircle(this.context, pellet.position, pellet.radius);
+      drawCircle(this.context, pellet.position, pellet.size / 2);
     });
     this.characters.forEach((character) =>
-      drawCircle(this.context, character.position, character.radius)
+      drawCircle(this.context, character.position, character.size / 2)
     );
   }
 
@@ -160,12 +154,13 @@ export class Maze {
     this.resetCharacterPositions();
     this.playerCharacter.initialize((hitbox) =>
       this.isPositionAvailable(hitbox)
-    ); // could pass it things here?
+    );
     this.nonPlayerCharacters.forEach((character) =>
       character.initialize(
         () => this.playerCharacter.position,
         this.map.navigableCellCenterPositions,
-        this.map.gridCellSize
+        this.map.gridCellSize,
+        (hitbox) => this.isPositionAvailable(hitbox)
       )
     );
   }

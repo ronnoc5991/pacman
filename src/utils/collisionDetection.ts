@@ -3,12 +3,10 @@ import { Hitbox } from "../types/Hitbox";
 
 type Collision = "edge" | "center" | "overlap";
 
-// could rename this file to collision detectors
-// write a function that tests for overlaps
-// write a function that tests for edge collision
-// write a function that tests for center overlap
+// Rethink what type of collision testing we will use here
+// Maybe we test to see if the two characters are occupying the same cell, much like the real Pacman?
 
-export const checkIfObjectsAreColliding = (
+export const testForCollision = (
   hitboxOne: CollidableObject,
   hitboxTwo: CollidableObject,
   collisionType: Collision = "edge"

@@ -5,28 +5,28 @@ import { getHitbox } from "../../utils/getHitbox";
 
 export class PlayerCharacter extends Character {
   nextDirection: Direction;
-  isNextMovePossible: ((hitbox: Hitbox) => boolean) | null = null;
+  isPositionAvailable: ((hitbox: Hitbox) => boolean) | null = null;
 
-  constructor(radius: number, velocity: number) {
-    super({ x: 0, y: 0 }, radius, velocity);
+  constructor(size: number, velocity: number) {
+    super({ x: 0, y: 0 }, size, velocity);
     this.nextDirection = "left";
   }
 
   public updatePosition() {
-    if (this.isNextMovePossible === null) return;
-    // call this loop equal to the velocity of our character?
+    if (this.isPositionAvailable === null) return;
+    // TODO: call this loop equal to the velocity of our character?
     if (
       this.direction !== this.nextDirection &&
-      this.isNextMovePossible(
-        getHitbox(this.getNextPosition(this.nextDirection), this.radius * 2)
+      this.isPositionAvailable(
+        getHitbox(this.getNextPosition(this.nextDirection), this.size)
       )
     ) {
       this.setDirection(this.nextDirection);
     }
 
     if (
-      this.isNextMovePossible(
-        getHitbox(this.getNextPosition(this.direction), this.radius * 2)
+      this.isPositionAvailable(
+        getHitbox(this.getNextPosition(this.direction), this.size)
       )
     ) {
       this.position = this.getNextPosition();
@@ -35,7 +35,7 @@ export class PlayerCharacter extends Character {
   }
 
   public initialize(isPositionAvailable: (hitbox: Hitbox) => boolean) {
-    this.isNextMovePossible = isPositionAvailable;
+    this.isPositionAvailable = isPositionAvailable;
     window.addEventListener("keydown", (event) => {
       switch (event.key) {
         case "ArrowUp":
@@ -58,6 +58,7 @@ export class PlayerCharacter extends Character {
   }
 
   public dispose() {
+    // To be called on game over?
     window.removeEventListener("keydown", (event) => {
       switch (event.key) {
         case "ArrowUp":

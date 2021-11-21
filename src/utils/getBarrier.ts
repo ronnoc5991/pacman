@@ -1,16 +1,18 @@
 import {
   AdjacentCellValueMap,
   TemplateCellValue,
-  mapTemplateCellValueMap,
-} from "../types/MapTemplate";
-import { Barrier, BarrierVariant } from "../types/Barrier";
+  mazeTemplateCellValueMap,
+} from "../types/MazeTemplate";
 import { Position } from "../types/Position";
 import { getHitbox } from "./getHitbox";
+import { Barrier, BarrierVariant } from "../classes/Barrier/Barrier";
 
-const blockingCellValues = [mapTemplateCellValueMap.barrier, null];
+const blockingCellValues = [mazeTemplateCellValueMap.barrier, null];
 
 const isBlockingValue = (value: TemplateCellValue | null) =>
   blockingCellValues.includes(value);
+
+// TODO: Write function that searches mapTemplate for outer edges and creates an outline for them
 
 export const getBarrier = (
   { x, y }: Position,
@@ -150,9 +152,5 @@ export const getBarrier = (
     return null;
   }
 
-  return {
-    position: { x, y },
-    hitboxes,
-    variant,
-  };
+  return new Barrier({ x, y }, hitboxes, variant);
 };

@@ -5,31 +5,31 @@ import { Hitbox } from "../../types/Hitbox";
 // This should just consist of a hitbox, nothing more
 
 export class CollidableObject {
-  position: Position;
-  radius: number;
+  position: Position; // I don't ultimately care about the position of the barriers, as they are static
+  size: number;
   hitbox: Hitbox;
 
-  constructor(position: Position, radius: number) {
+  constructor(position: Position, size: number) {
     this.position = position;
-    this.radius = radius;
+    this.size = size;
     this.hitbox = {
-      top: position.y - radius,
-      right: position.x + radius,
-      bottom: position.y + radius,
-      left: position.x - radius,
+      top: position.y - size / 2,
+      right: position.x + size / 2,
+      bottom: position.y + size / 2,
+      left: position.x - size / 2,
     };
   }
 
-  public getHitbox(position = this.position, radius = this.radius) {
+  public getHitbox(position = this.position, size = this.size) {
     return {
-      top: position.y - radius,
-      right: position.x + radius,
-      bottom: position.y + radius,
-      left: position.x - radius,
+      top: position.y - size / 2,
+      right: position.x + size / 2,
+      bottom: position.y + size / 2,
+      left: position.x - size / 2,
     };
   }
 
-  public setHitbox(position = this.position, radius = this.radius) {
-    this.hitbox = this.getHitbox(position, radius);
+  public setHitbox(position = this.position, size = this.size) {
+    this.hitbox = this.getHitbox(position, size);
   }
 }
