@@ -19,7 +19,7 @@ export const getMazeFromTemplate = (
   const navigableCellCenterPositions: Array<Position> = [];
   let initialPlayerPosition = { x: 0, y: 0 };
   let initialNonPlayerCharacterPositions: Array<Position> = [];
-  let teleporters: Array<CollidableObject> = [];
+  let teleporters: Array<Teleporter> = [];
   const pellets: Array<Pellet> = [];
 
   mapTemplate.map((row, rowIndex) => {

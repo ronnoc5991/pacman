@@ -1,8 +1,8 @@
-import { CollidableObject } from "../CollidableObject/CollidableObject";
 import { Position } from "../../types/Position";
 
-export class Teleporter extends CollidableObject {
+export class Teleporter {
+  position: Position;
   constructor(position: Position) {
-    super(position, 1);
+    this.position = position;
   }
 }

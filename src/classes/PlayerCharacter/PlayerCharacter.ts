@@ -30,7 +30,7 @@ export class PlayerCharacter extends Character {
       )
     ) {
       this.position = this.getNextPosition();
-      this.setHitbox();
+      this.updateHitbox();
     }
   }
 

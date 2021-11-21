@@ -1,19 +1,21 @@
 import { Position } from "../../types/Position";
 import { drawCircle } from "../../utils/drawCircle";
 import {
+  areCentersColliding,
   areEdgesColliding,
-  testForCollision,
 } from "../../utils/collisionDetection";
-import { Pellet } from "../Pellet/Pellet";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
-import { CollidableObject } from "../CollidableObject/CollidableObject";
 import { GameMode } from "../../types/GameMode";
 import { GameEvent, gameEventMap } from "../../types/GameEvent";
 import { drawBarrier } from "../../utils/drawBarrier";
 import { Hitbox } from "../../types/Hitbox";
-import { Barrier } from "../Barrier/Barrier";
 import { Map } from "../../types/Map";
+import { directions, Direction } from "../../types/Direction";
+
+// Maze's responsibilities:
+// Know itself: know about the positions of everything (barriers, pellets, teleporters, )
+// Question: Should the Maze have the responsibility of rendering? If not, where is the game rendered?
 
 // Maze consists of barriers and pellets
 // characters are PLACED in the maze, they are not part of the maze
@@ -25,16 +27,12 @@ import { Map } from "../../types/Map";
 export class Maze {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
-  barriers: Array<Barrier>;
-  barrierHitboxes: Array<Hitbox>;
-  pellets: Array<Pellet>;
   playerCharacter: PlayerCharacter;
-  initialPlayerCharacterPosition: Position;
   nonPlayerCharacters: Array<NonPlayerCharacter>;
   characters: Array<PlayerCharacter | NonPlayerCharacter>;
-  teleporters: Array<CollidableObject>;
   onGameEvent: (event: GameEvent) => void;
   map: Map;
+  barrierHitboxes: Array<Hitbox>;
 
   constructor(
     map: Map,
@@ -46,17 +44,13 @@ export class Maze {
     this.map = map;
     this.canvas = canvas;
     this.context = canvas.getContext("2d") as CanvasRenderingContext2D;
-    this.barriers = this.map.barriers;
-    this.barrierHitboxes = this.barriers
-      .map((barrier) => barrier.hitboxes)
-      .flat();
-    this.pellets = this.map.pellets;
-    this.initialPlayerCharacterPosition = this.map.initialPlayerPosition;
-    this.teleporters = this.map.teleporters;
     this.onGameEvent = onGameEvent;
     this.playerCharacter = playerCharacter;
     this.nonPlayerCharacters = nonPlayerCharacters;
     this.characters = [this.playerCharacter, ...this.nonPlayerCharacters];
+    this.barrierHitboxes = this.map.barriers
+      .map((barrier) => barrier.hitboxes)
+      .flat();
   }
 
   private clearCanvas() {
@@ -68,13 +62,15 @@ export class Maze {
   }
 
   private handleCollisions() {
-    if (this.pellets.every((pellet) => pellet.hasBeenEaten))
+    if (this.map.pellets.every((pellet) => pellet.hasBeenEaten))
       this.onGameEvent(gameEventMap.allPelletsEaten);
 
-    this.pellets
+    this.map.pellets
       .filter((pellet) => !pellet.hasBeenEaten)
       .forEach((pellet) => {
-        if (testForCollision(this.playerCharacter, pellet, "center")) {
+        if (
+          areCentersColliding(this.playerCharacter.position, pellet.position)
+        ) {
           pellet.hasBeenEaten = true;
           this.onGameEvent(
             pellet.isPowerPellet
@@ -86,21 +82,24 @@ export class Maze {
 
     if (
       this.nonPlayerCharacters.filter((nonPlayerCharacter) =>
-        testForCollision(this.playerCharacter, nonPlayerCharacter, "overlap")
+        areEdgesColliding(
+          this.playerCharacter.hitbox,
+          nonPlayerCharacter.hitbox
+        )
       ).length > 0
     ) {
       this.onGameEvent(gameEventMap.playerCharacterEaten);
     }
 
-    if (!this.teleporters) return;
+    if (!this.map.teleporters) return;
     this.characters.forEach((character) => {
-      const indexOfCollidedTeleporter = this.teleporters.findIndex(
+      const indexOfCollidedTeleporter = this.map.teleporters.findIndex(
         (teleporter) => {
-          return testForCollision(character, teleporter, "center");
+          return areCentersColliding(character.position, teleporter.position);
         }
       );
       if (indexOfCollidedTeleporter > -1) {
-        const { position: newPosition } = this.teleporters.find(
+        const { position: newPosition } = this.map.teleporters.find(
           (teleporter, index) => index !== indexOfCollidedTeleporter
         )!; // TODO: fix this exclamation mark
         character.setPosition(newPosition as Position);
@@ -110,19 +109,19 @@ export class Maze {
 
   public updateGameMode(gameMode: GameMode) {
     console.log(gameMode);
-    // should update non Player Characters with new game mode, as their behavior changes based on it
+    // TODO: Update NonPlayerCharacters with new game mode, as their behavior changes based on it
   }
 
   private renderOnCanvas() {
-    this.barriers.forEach((barrier) =>
+    this.map.barriers.forEach((barrier) =>
       drawBarrier(barrier, this.context, this.map.gridCellSize)
     );
-    this.pellets.forEach((pellet) => {
-      if (pellet.hasBeenEaten) return;
-      drawCircle(this.context, pellet.position, pellet.size / 2);
+    this.map.pellets.forEach(({ hasBeenEaten, position, size }) => {
+      if (hasBeenEaten) return;
+      drawCircle(this.context, position, size);
     });
-    this.characters.forEach((character) =>
-      drawCircle(this.context, character.position, character.size / 2)
+    this.characters.forEach(({ position, size }) =>
+      drawCircle(this.context, position, size)
     );
   }
 
@@ -133,10 +132,48 @@ export class Maze {
     );
   }
 
-  public isPositionAvailable(hitbox: Hitbox) {
+  private isPositionAvailable(hitbox: Hitbox) {
     return this.barrierHitboxes.every((barrierHitbox) => {
       return !areEdgesColliding(barrierHitbox, hitbox);
     });
+  }
+
+  private isPositionIntersection(position: Position) {
+    return this.isCellNavigable(position);
+  }
+
+  private isCellNavigable(position: Position) {
+    return (
+      -1 !==
+      this.map.navigableCellCenterPositions.findIndex(
+        (cellPosition) =>
+          cellPosition.x === position.x && cellPosition.y === position.y
+      )
+    );
+  }
+
+  private getPossibleDirections(position: Position): Array<Direction> {
+    return directions.filter((direction) =>
+      this.isCellNavigable(
+        this.getAdjacentCellCenterPosition(position, direction)
+      )
+    );
+  }
+
+  private getAdjacentCellCenterPosition(
+    { x, y }: Position,
+    direction: Direction
+  ): Position {
+    switch (direction) {
+      case "up":
+        return { x, y: y - this.map.gridCellSize };
+      case "right":
+        return { x: x + this.map.gridCellSize, y };
+      case "down":
+        return { x, y: y + this.map.gridCellSize };
+      case "left":
+        return { x: x - this.map.gridCellSize, y };
+    }
   }
 
   public reset() {
@@ -157,10 +194,12 @@ export class Maze {
     );
     this.nonPlayerCharacters.forEach((character) =>
       character.initialize(
+        (hitbox) => this.isPositionAvailable(hitbox),
+        (position: Position) => this.isPositionIntersection(position),
+        (position: Position) => this.getPossibleDirections(position),
         () => this.playerCharacter.position,
-        this.map.navigableCellCenterPositions,
-        this.map.gridCellSize,
-        (hitbox) => this.isPositionAvailable(hitbox)
+        (position, direction) =>
+          this.getAdjacentCellCenterPosition(position, direction)
       )
     );
   }

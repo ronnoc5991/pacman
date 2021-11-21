@@ -3,12 +3,30 @@ import { Direction } from "../../types/Direction";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 export class Character extends CollidableObject {
+  position: Position;
+  size: number;
   velocity: number;
   direction: Direction = "left";
 
   constructor(position: Position, size: number, velocity: number) {
-    super(position, size);
+    super({
+      top: position.y - size / 2,
+      right: position.x + size / 2,
+      bottom: position.y + size / 2,
+      left: position.x - size / 2,
+    });
+    this.position = position;
+    this.size = size;
     this.velocity = velocity;
+  }
+
+  protected updateHitbox(position: Position = this.position) {
+    this.hitbox = {
+      top: position.y - this.size / 2,
+      right: position.x + this.size / 2,
+      bottom: position.y + this.size / 2,
+      left: position.x - this.size / 2,
+    };
   }
 
   public setDirection(direction: Direction) {

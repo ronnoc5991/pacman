@@ -5,19 +5,28 @@ import { Hitbox } from "../../types/Hitbox";
 import { getHitbox } from "../../utils/getHitbox";
 
 // NPC's responsibilities:
-// Pursue PC when game is in pursue mode
-// Flee from PC when game is in flee mode
-// Return home when eaten
+// Pursue PC when game is in pursue mode (variant of path finding algo)
+// Flee from PC when game is in flee mode (variant of path finding algo)
+// Return home when eaten (variant of path finding algo)
 // Update position based on PC position
-//
+
+// TODO: Rework NPCs so that they use target tiles in order to guide their navigation
+// they need to calculate their target tile on the fly in pursue mode
+// they can have a fixed target tile in scatter mode
+// they can have a fixed target tile in return to home mode?
+// look up what they should do in flee mode?  Is this the opposite of puruse?  Or is it also target tile based?
 
 export class NonPlayerCharacter extends Character {
-  navigableCellCenterPositions: Array<Position> = [];
-  gridCellSize: number = 0;
   directions: ReadonlyArray<Direction>;
   backwards: Direction;
-  getPlayerCharacterPosition: () => Position = () => ({ x: 0, y: 0 });
   isPositionAvailable: ((hitbox: Hitbox) => boolean) | null = null;
+  getPlayerCharacterPosition: (() => Position) | null = null;
+  isPositionIntersection: ((position: Position) => boolean) | null = null;
+  getPossibleDirections: ((position: Position) => Array<Direction>) | null =
+    null;
+  getAdjacentCellCenterPosition:
+    | ((position: Position, direction: Direction) => Position)
+    | null = null;
 
   constructor(size: number, velocity: number) {
     super({ x: 0, y: 0 }, size, velocity);
@@ -25,8 +34,9 @@ export class NonPlayerCharacter extends Character {
     this.backwards = "right";
   }
 
-  // can be called by the board when the game mode changes to scatter
-  public reverseDirection() {
+  // can be called on mode change... should be private
+
+  private reverseDirection() {
     const previousDirection = this.direction;
     const previousBackwards = this.backwards;
     this.direction = previousBackwards;
@@ -50,119 +60,81 @@ export class NonPlayerCharacter extends Character {
     }
   }
 
-  private checkIfAtPossibleIntersection() {
-    return (
-      this.navigableCellCenterPositions.filter((position) => {
-        return position.x === this.position.x && position.y === this.position.y;
-      }).length > 0
-    );
-  }
+  private chooseDirection(
+    directions: Array<Direction>,
+    playerCharacterPosition: Position
+  ): Direction | void {
+    if (this.getAdjacentCellCenterPosition === null) return;
 
-  private getNewDirection() {
-    const newDirections = this.directions.filter(
-      (direction) => direction !== this.backwards
-    );
-    const newNavigablePositions: Array<{
-      x: number;
-      y: number;
-      direction: Direction;
-      distanceToPlayerCharacter: number;
-    }> = newDirections
+    const newDirection = directions
       .map((direction) => {
-        switch (direction) {
-          case "up":
-            return {
-              x: this.position.x,
-              y: this.position.y - this.gridCellSize,
-              direction,
-            };
-            break;
-          case "right":
-            return {
-              x: this.position.x + this.gridCellSize,
-              y: this.position.y,
-              direction,
-            };
-            break;
-          case "down":
-            return {
-              x: this.position.x,
-              y: this.position.y + this.gridCellSize,
-              direction,
-            };
-            break;
-          case "left":
-            return {
-              x: this.position.x - this.gridCellSize,
-              y: this.position.y,
-              direction,
-            };
-            break;
-        }
-      })
-      .filter((newPosition) => {
-        return (
-          -1 !==
-          this.navigableCellCenterPositions.findIndex(
-            (position) =>
-              newPosition.x === position.x && newPosition.y === position.y
-          )
+        const adjacentCellPosition = this.getAdjacentCellCenterPosition!(
+          this.position,
+          direction
         );
-      })
-      .map((position) => {
         return {
-          ...position,
+          direction,
           distanceToPlayerCharacter: Math.sqrt(
-            Math.pow(position.x - this.getPlayerCharacterPosition().x, 2) +
-              Math.pow(position.y - this.getPlayerCharacterPosition().y, 2)
+            Math.pow(playerCharacterPosition.x - adjacentCellPosition.x, 2) +
+              Math.pow(playerCharacterPosition.y - adjacentCellPosition.y, 2)
           ),
         };
+      })
+      .reduce((previousValue, currentValue) => {
+        return previousValue.distanceToPlayerCharacter <
+          currentValue.distanceToPlayerCharacter
+          ? previousValue
+          : currentValue;
       });
-
-    if (newNavigablePositions.length === 0) return this.direction;
-
-    let shortestDistance: number;
-
-    newNavigablePositions.forEach((direction) => {
-      if (!shortestDistance) {
-        shortestDistance = direction.distanceToPlayerCharacter;
-      } else if (direction.distanceToPlayerCharacter < shortestDistance) {
-        shortestDistance = direction.distanceToPlayerCharacter;
-      }
-    });
-
-    const directionWithShortestDistance = newNavigablePositions.findIndex(
-      (direction) => direction.distanceToPlayerCharacter === shortestDistance
-    );
-    return newNavigablePositions[directionWithShortestDistance].direction;
+    return newDirection.direction;
   }
 
   public updatePosition() {
-    if (this.isPositionAvailable === null) return;
-    // call this loop equal to the velocity of our character
-    if (this.checkIfAtPossibleIntersection()) {
-      this.direction = this.getNewDirection();
-      this.setBackwards();
-    }
     if (
-      this.isPositionAvailable(
-        getHitbox(this.getNextPosition(this.direction), this.size)
-      )
+      this.isPositionAvailable === null ||
+      this.isPositionIntersection === null ||
+      this.getPossibleDirections === null ||
+      this.getAdjacentCellCenterPosition === null ||
+      this.getPlayerCharacterPosition === null
+    )
+      return;
+
+    if (this.isPositionIntersection(this.position)) {
+      const possibleDirections = this.getPossibleDirections(
+        this.position
+      ).filter((direction) => direction !== this.backwards);
+      let newDirection = this.chooseDirection(
+        possibleDirections,
+        this.getPlayerCharacterPosition()
+      );
+      if (newDirection) {
+        this.direction = newDirection;
+        this.setBackwards();
+      }
+    }
+
+    if (
+      this.isPositionAvailable(getHitbox(this.getNextPosition(), this.size))
     ) {
       this.position = this.getNextPosition();
-      this.setHitbox();
+      this.updateHitbox();
     }
   }
 
   public initialize(
+    isPositionAvailable: (hitbox: Hitbox) => boolean,
+    isPositionIntersection: (position: Position) => boolean,
+    getPossibleDirections: (position: Position) => Array<Direction>,
     getPlayerCharacterPosition: () => Position,
-    navigableCellCenterPositions: Array<Position>,
-    gridCellSize: number,
-    isPositionAvailable: (hitbox: Hitbox) => boolean
+    getAdjacentCellCenterPosition: (
+      position: Position,
+      direction: Direction
+    ) => Position
   ) {
-    this.getPlayerCharacterPosition = getPlayerCharacterPosition;
-    this.navigableCellCenterPositions = navigableCellCenterPositions;
-    this.gridCellSize = gridCellSize;
     this.isPositionAvailable = isPositionAvailable;
+    this.isPositionIntersection = isPositionIntersection;
+    this.getPossibleDirections = getPossibleDirections;
+    this.getPlayerCharacterPosition = getPlayerCharacterPosition;
+    this.getAdjacentCellCenterPosition = getAdjacentCellCenterPosition;
   }
 }

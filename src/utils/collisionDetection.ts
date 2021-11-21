@@ -1,66 +1,13 @@
-import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
 import { Hitbox } from "../types/Hitbox";
-
-type Collision = "edge" | "center" | "overlap";
+import { Position } from "../types/Position";
 
 // Rethink what type of collision testing we will use here
 // Maybe we test to see if the two characters are occupying the same cell, much like the real Pacman?
 
-export const testForCollision = (
-  hitboxOne: CollidableObject,
-  hitboxTwo: CollidableObject,
-  collisionType: Collision = "edge"
-) => {
-  let areObjectsColliding = false;
-  switch (collisionType) {
-    case "edge":
-      if (
-        hitboxOne.hitbox.top === hitboxTwo.hitbox.bottom &&
-        hitboxOne.position.x === hitboxTwo.position.x
-      )
-        areObjectsColliding = true;
-      if (
-        hitboxOne.hitbox.right === hitboxTwo.hitbox.left &&
-        hitboxOne.position.y === hitboxTwo.position.y
-      )
-        areObjectsColliding = true;
-      if (
-        hitboxOne.hitbox.bottom === hitboxTwo.hitbox.top &&
-        hitboxOne.position.x === hitboxTwo.position.x
-      )
-        areObjectsColliding = true;
-      if (
-        hitboxOne.hitbox.left === hitboxTwo.hitbox.right &&
-        hitboxOne.position.y === hitboxTwo.position.y
-      )
-        areObjectsColliding = true;
-      break;
-    case "center":
-      if (
-        hitboxOne.position.x === hitboxTwo.position.x &&
-        hitboxOne.position.y === hitboxTwo.position.y
-      )
-        areObjectsColliding = true;
-      break;
-    case "overlap":
-      const isOverlappingX =
-        (hitboxOne.hitbox.left >= hitboxTwo.hitbox.left &&
-          hitboxOne.hitbox.left <= hitboxTwo.hitbox.right) ||
-        (hitboxOne.hitbox.right >= hitboxTwo.hitbox.left &&
-          hitboxOne.hitbox.right <= hitboxTwo.hitbox.right);
-      const isOverlappingY =
-        (hitboxOne.hitbox.top >= hitboxTwo.hitbox.top &&
-          hitboxOne.hitbox.top <= hitboxTwo.hitbox.bottom) ||
-        (hitboxOne.hitbox.bottom >= hitboxTwo.hitbox.top &&
-          hitboxOne.hitbox.bottom <= hitboxTwo.hitbox.bottom);
-      if (isOverlappingX && isOverlappingY) areObjectsColliding = true;
-      break;
-    default:
-      // do nothing
-      break;
-  }
-  return areObjectsColliding;
-};
+export const areCentersColliding = (
+  positionOne: Position,
+  positionTwo: Position
+) => positionOne.x === positionTwo.x && positionOne.y === positionTwo.y;
 
 export const areEdgesColliding = (
   hitboxOne: Hitbox,

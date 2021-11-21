@@ -1,7 +1,7 @@
 import { Position } from "./Position";
 import { Pellet } from "../classes/Pellet/Pellet";
-import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
 import { Barrier } from "../classes/Barrier/Barrier";
+import { Teleporter } from "../classes/Teleporter/Teleporter";
 
 export type Map = {
   gridCellSize: number;
@@ -10,6 +10,6 @@ export type Map = {
   pellets: Array<Pellet>;
   initialPlayerPosition: Position;
   initialNonPlayerCharacterPositions: Array<Position>;
-  teleporters: Array<CollidableObject>;
-  // npc cage position and npc positions to go here
+  teleporters: Array<Teleporter>;
+  // npc cage position to go here
 };
