@@ -7,7 +7,6 @@ import {
 import { Pellet } from "../classes/Pellet/Pellet";
 import { Teleporter } from "../classes/Teleporter/Teleporter";
 import { getBarrier } from "./getBarrier";
-import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
 import { Barrier } from "../classes/Barrier/Barrier";
 import { Map } from "../types/Map";
 
@@ -21,6 +20,15 @@ export const getMazeFromTemplate = (
   let initialNonPlayerCharacterPositions: Array<Position> = [];
   let teleporters: Array<Teleporter> = [];
   const pellets: Array<Pellet> = [];
+  const mazeHeight = mapTemplate.length * gridCellSize;
+  const mazeWidth = mapTemplate[0].length * gridCellSize;
+  const nonPlayerCharacterDefaultTargetTiles = [
+    { x: -gridCellSize, y: -gridCellSize },
+    { x: mazeWidth + gridCellSize, y: -gridCellSize },
+    { x: mazeWidth + gridCellSize, y: mazeHeight + gridCellSize },
+    { x: -gridCellSize, y: mazeHeight + gridCellSize },
+  ];
+  let ghostReviveTargetTilePosition = { x: 0, y: 0 };
 
   mapTemplate.map((row, rowIndex) => {
     row.map((cell, columnIndex) => {
@@ -81,6 +89,7 @@ export const getMazeFromTemplate = (
           navigableCellCenterPositions.push({ x, y });
           break;
         case mazeTemplateCellValueMap.ghostStart:
+          ghostReviveTargetTilePosition = { x, y };
           initialNonPlayerCharacterPositions.push({ x, y });
           navigableCellCenterPositions.push({ x, y });
           break;
@@ -102,7 +111,11 @@ export const getMazeFromTemplate = (
     barriers,
     navigableCellCenterPositions,
     initialPlayerPosition,
-    initialNonPlayerCharacterPositions,
+    nonPlayerCharacterConfig: {
+      initialPositions: initialNonPlayerCharacterPositions,
+      scatterTargetTilePositions: nonPlayerCharacterDefaultTargetTiles,
+      reviveTargetTilePosition: ghostReviveTargetTilePosition,
+    },
     pellets,
     teleporters,
   };

@@ -9,7 +9,11 @@ export type Map = {
   navigableCellCenterPositions: Array<Position>;
   pellets: Array<Pellet>;
   initialPlayerPosition: Position;
-  initialNonPlayerCharacterPositions: Array<Position>;
   teleporters: Array<Teleporter>;
+  nonPlayerCharacterConfig: {
+    initialPositions: Array<Position>;
+    scatterTargetTilePositions: Array<Position>;
+    reviveTargetTilePosition: Position;
+  };
   // npc cage position to go here
 };

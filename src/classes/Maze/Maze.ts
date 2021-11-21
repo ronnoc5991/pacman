@@ -6,22 +6,18 @@ import {
 } from "../../utils/collisionDetection";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
-import { GameMode } from "../../types/GameMode";
-import { GameEvent, gameEventMap } from "../../types/GameEvent";
+import { GameMode, gameModeMap } from "../../types/GameMode";
+import { GameEvent, gameEventMap, gameEvents } from "../../types/GameEvent";
 import { drawBarrier } from "../../utils/drawBarrier";
 import { Hitbox } from "../../types/Hitbox";
 import { Map } from "../../types/Map";
 import { directions, Direction } from "../../types/Direction";
+import { Game } from "../Game/Game";
 
 // Maze's responsibilities:
-// Know itself: know about the positions of everything (barriers, pellets, teleporters, )
+// Know itself: know about the positions of everything (barriers, pellets, teleporters, characters?)
+// maybe change the name back to Board?
 // Question: Should the Maze have the responsibility of rendering? If not, where is the game rendered?
-
-// Maze consists of barriers and pellets
-// characters are PLACED in the maze, they are not part of the maze
-// Characters can query the maze for information
-// Non player Characters can query for the playerCharacter's position to use in their own calculations
-
 // TODO: Barriers should be drawn only once on a separate canvas, no need to redraw them so often
 
 export class Maze {
@@ -33,10 +29,12 @@ export class Maze {
   onGameEvent: (event: GameEvent) => void;
   map: Map;
   barrierHitboxes: Array<Hitbox>;
+  gameMode: GameMode;
 
   constructor(
     map: Map,
     canvas: HTMLCanvasElement,
+    gameMode: GameMode,
     onGameEvent: (event: GameEvent) => void,
     playerCharacter: PlayerCharacter,
     nonPlayerCharacters: Array<NonPlayerCharacter>
@@ -51,6 +49,7 @@ export class Maze {
     this.barrierHitboxes = this.map.barriers
       .map((barrier) => barrier.hitboxes)
       .flat();
+    this.gameMode = gameMode;
   }
 
   private clearCanvas() {
@@ -62,6 +61,7 @@ export class Maze {
   }
 
   private handleCollisions() {
+    // rename?
     if (this.map.pellets.every((pellet) => pellet.hasBeenEaten))
       this.onGameEvent(gameEventMap.allPelletsEaten);
 
@@ -80,16 +80,34 @@ export class Maze {
         }
       });
 
-    if (
-      this.nonPlayerCharacters.filter((nonPlayerCharacter) =>
-        areEdgesColliding(
+    this.nonPlayerCharacters
+      .filter((character) => !character.isEaten)
+      .forEach((nonPlayerCharacter) => {
+        const isCollidingWithPlayer = areEdgesColliding(
           this.playerCharacter.hitbox,
           nonPlayerCharacter.hitbox
+        );
+        if (!isCollidingWithPlayer) return;
+
+        if (this.gameMode === gameModeMap.flee) {
+          this.onGameEvent(gameEventMap.nonPlayerCharacterEaten);
+          nonPlayerCharacter.onEvent(gameEventMap.nonPlayerCharacterEaten);
+        } else {
+          this.onGameEvent(gameEventMap.playerCharacterEaten);
+        }
+      });
+
+    this.nonPlayerCharacters
+      .filter((character) => character.isEaten)
+      .forEach((character) => {
+        if (
+          areCentersColliding(
+            character.position,
+            this.map.nonPlayerCharacterConfig.reviveTargetTilePosition
+          )
         )
-      ).length > 0
-    ) {
-      this.onGameEvent(gameEventMap.playerCharacterEaten);
-    }
+          character.onEvent(gameEventMap.nonPlayerCharacterRevived);
+      });
 
     if (!this.map.teleporters) return;
     this.characters.forEach((character) => {
@@ -108,8 +126,10 @@ export class Maze {
   }
 
   public updateGameMode(gameMode: GameMode) {
-    console.log(gameMode);
-    // TODO: Update NonPlayerCharacters with new game mode, as their behavior changes based on it
+    this.gameMode = gameMode;
+    this.nonPlayerCharacters.forEach((character) =>
+      character.updateGameMode(gameMode)
+    );
   }
 
   private renderOnCanvas() {
@@ -120,15 +140,22 @@ export class Maze {
       if (hasBeenEaten) return;
       drawCircle(this.context, position, size);
     });
-    this.characters.forEach(({ position, size }) =>
-      drawCircle(this.context, position, size)
+    drawCircle(
+      this.context,
+      this.playerCharacter.position,
+      this.playerCharacter.size
+    );
+    this.nonPlayerCharacters.forEach(({ position, size, isEaten }) =>
+      drawCircle(this.context, position, size, isEaten ? "#FF0000" : undefined)
     );
   }
 
   private resetCharacterPositions() {
     this.playerCharacter.setPosition(this.map.initialPlayerPosition);
     this.nonPlayerCharacters.forEach((character, index) =>
-      character.setPosition(this.map.initialNonPlayerCharacterPositions[index])
+      character.setPosition(
+        this.map.nonPlayerCharacterConfig.initialPositions[index]
+      )
     );
   }
 
@@ -192,14 +219,16 @@ export class Maze {
     this.playerCharacter.initialize((hitbox) =>
       this.isPositionAvailable(hitbox)
     );
-    this.nonPlayerCharacters.forEach((character) =>
+    this.nonPlayerCharacters.forEach((character, index) =>
       character.initialize(
         (hitbox) => this.isPositionAvailable(hitbox),
         (position: Position) => this.isPositionIntersection(position),
         (position: Position) => this.getPossibleDirections(position),
         () => this.playerCharacter.position,
         (position, direction) =>
-          this.getAdjacentCellCenterPosition(position, direction)
+          this.getAdjacentCellCenterPosition(position, direction),
+        this.map.nonPlayerCharacterConfig.scatterTargetTilePositions[index],
+        this.map.nonPlayerCharacterConfig.reviveTargetTilePosition
       )
     );
   }

@@ -45,7 +45,7 @@ export class Game {
       1
     );
     this.nonPlayerCharacters = Array.from({ length: 1 }).map(
-      () => new NonPlayerCharacter((config.gridCellSize - 1) * 2, 1)
+      () => new NonPlayerCharacter((config.gridCellSize - 1) * 2, 1, this.mode)
     );
     this.config.canvas.height =
       this.config.gridCellSize * this.config.mapTemplate.length;
@@ -63,7 +63,7 @@ export class Game {
     if (this.modeChangingTimeout) clearTimeout(this.modeChangingTimeout);
     this.modeChangingTimeout = setTimeout(
       () => this.setMode(this.defaultMode),
-      5000 // TODO: Replace this duration with some sort of time table based on level number and score and new game mode
+      30000 // TODO: Replace this duration with some sort of time table based on level number and score and new game mode
     );
   }
 
@@ -102,6 +102,7 @@ export class Game {
     this.maze = new Maze(
       this.currentMaze,
       this.config.canvas,
+      this.mode,
       (event: GameEvent) => this.onEvent(event),
       this.playerCharacter,
       this.nonPlayerCharacters

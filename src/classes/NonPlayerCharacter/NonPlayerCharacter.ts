@@ -3,18 +3,14 @@ import { Position } from "../../types/Position";
 import { directions, Direction } from "../../types/Direction";
 import { Hitbox } from "../../types/Hitbox";
 import { getHitbox } from "../../utils/getHitbox";
+import { GameMode, gameModeMap } from "../../types/GameMode";
+import { GameEvent, gameEventMap } from "../../types/GameEvent";
 
 // NPC's responsibilities:
-// Pursue PC when game is in pursue mode (variant of path finding algo)
-// Flee from PC when game is in flee mode (variant of path finding algo)
 // Return home when eaten (variant of path finding algo)
-// Update position based on PC position
 
 // TODO: Rework NPCs so that they use target tiles in order to guide their navigation
-// they need to calculate their target tile on the fly in pursue mode
-// they can have a fixed target tile in scatter mode
 // they can have a fixed target tile in return to home mode?
-// look up what they should do in flee mode?  Is this the opposite of puruse?  Or is it also target tile based?
 
 export class NonPlayerCharacter extends Character {
   directions: ReadonlyArray<Direction>;
@@ -27,14 +23,17 @@ export class NonPlayerCharacter extends Character {
   getAdjacentCellCenterPosition:
     | ((position: Position, direction: Direction) => Position)
     | null = null;
+  gameMode: GameMode;
+  defaultTargetTilePosition: Position | null = null;
+  isEaten: boolean = false;
+  reviveTargetTilePosition: Position | null = null;
 
-  constructor(size: number, velocity: number) {
+  constructor(size: number, velocity: number, gameMode: GameMode) {
     super({ x: 0, y: 0 }, size, velocity);
     this.directions = directions;
     this.backwards = "right";
+    this.gameMode = gameMode;
   }
-
-  // can be called on mode change... should be private
 
   private reverseDirection() {
     const previousDirection = this.direction;
@@ -62,7 +61,7 @@ export class NonPlayerCharacter extends Character {
 
   private chooseDirection(
     directions: Array<Direction>,
-    playerCharacterPosition: Position
+    targetTile: Position
   ): Direction | void {
     if (this.getAdjacentCellCenterPosition === null) return;
 
@@ -74,19 +73,63 @@ export class NonPlayerCharacter extends Character {
         );
         return {
           direction,
-          distanceToPlayerCharacter: Math.sqrt(
-            Math.pow(playerCharacterPosition.x - adjacentCellPosition.x, 2) +
-              Math.pow(playerCharacterPosition.y - adjacentCellPosition.y, 2)
+          distanceToTargetTile: Math.sqrt(
+            Math.pow(targetTile.x - adjacentCellPosition.x, 2) +
+              Math.pow(targetTile.y - adjacentCellPosition.y, 2)
           ),
         };
       })
       .reduce((previousValue, currentValue) => {
-        return previousValue.distanceToPlayerCharacter <
-          currentValue.distanceToPlayerCharacter
+        return previousValue.distanceToTargetTile <
+          currentValue.distanceToTargetTile
           ? previousValue
           : currentValue;
       });
     return newDirection.direction;
+  }
+
+  public onEvent(event: GameEvent) {
+    switch (event) {
+      case "nonPlayerCharacterEaten":
+        this.isEaten = true;
+        break;
+      case "nonPlayerCharacterRevived":
+        this.isEaten = false;
+        break;
+    }
+  }
+
+  public updateGameMode(newGameMode: GameMode) {
+    if (
+      (this.gameMode === gameModeMap.pursue &&
+        (newGameMode === gameModeMap.scatter ||
+          newGameMode === gameModeMap.flee)) ||
+      (this.gameMode === gameModeMap.scatter &&
+        (newGameMode === gameModeMap.pursue ||
+          newGameMode === gameModeMap.flee))
+    ) {
+      this.reverseDirection();
+    }
+    this.gameMode = newGameMode;
+  }
+
+  private getTargetTilePosition() {
+    if (
+      this.getPlayerCharacterPosition === null ||
+      !this.reviveTargetTilePosition ||
+      !this.defaultTargetTilePosition
+    )
+      return { x: 0, y: 0 };
+
+    if (this.isEaten) {
+      return this.reviveTargetTilePosition;
+    }
+
+    if (this.gameMode === gameModeMap.scatter) {
+      return this.defaultTargetTilePosition;
+    }
+
+    return this.getPlayerCharacterPosition();
   }
 
   public updatePosition() {
@@ -95,7 +138,8 @@ export class NonPlayerCharacter extends Character {
       this.isPositionIntersection === null ||
       this.getPossibleDirections === null ||
       this.getAdjacentCellCenterPosition === null ||
-      this.getPlayerCharacterPosition === null
+      this.getPlayerCharacterPosition === null ||
+      this.defaultTargetTilePosition === null
     )
       return;
 
@@ -103,10 +147,15 @@ export class NonPlayerCharacter extends Character {
       const possibleDirections = this.getPossibleDirections(
         this.position
       ).filter((direction) => direction !== this.backwards);
-      let newDirection = this.chooseDirection(
-        possibleDirections,
-        this.getPlayerCharacterPosition()
-      );
+      let newDirection =
+        this.gameMode === gameModeMap.flee && !this.isEaten
+          ? possibleDirections[
+              Math.floor(Math.random() * (possibleDirections.length - 1))
+            ]
+          : this.chooseDirection(
+              possibleDirections,
+              this.getTargetTilePosition()
+            );
       if (newDirection) {
         this.direction = newDirection;
         this.setBackwards();
@@ -129,12 +178,16 @@ export class NonPlayerCharacter extends Character {
     getAdjacentCellCenterPosition: (
       position: Position,
       direction: Direction
-    ) => Position
+    ) => Position,
+    defaultTargetTilePosition: Position,
+    reviveTargetTilePosition: Position
   ) {
     this.isPositionAvailable = isPositionAvailable;
     this.isPositionIntersection = isPositionIntersection;
     this.getPossibleDirections = getPossibleDirections;
     this.getPlayerCharacterPosition = getPlayerCharacterPosition;
     this.getAdjacentCellCenterPosition = getAdjacentCellCenterPosition;
+    this.defaultTargetTilePosition = defaultTargetTilePosition;
+    this.reviveTargetTilePosition = reviveTargetTilePosition;
   }
 }
