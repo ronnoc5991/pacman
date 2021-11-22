@@ -1,4 +1,4 @@
-import { mapTemplate } from "./config/mapTemplate";
+import { mazeTemplate } from "./config/mazeTemplate";
 import { Game } from "./classes/Game/Game";
 import { GameConfig } from "./types/GameConfig";
 
@@ -9,11 +9,11 @@ import { GameConfig } from "./types/GameConfig";
 // templateContainer.style.height = `${canvas.height}px`;
 // templateContainer.classList.add("template-container");
 // templateContainer.classList.add("is-hidden");
-// mapTemplate.forEach((row) => {
+// mazeTemplate.forEach((row) => {
 //   row.forEach((cell) => {
 //     const cellDiv = document.createElement("div");
 //     cellDiv.style.width = `${canvas.width / row.length}px`;
-//     cellDiv.style.height = `${canvas.height / mapTemplate.length}px`;
+//     cellDiv.style.height = `${canvas.height / mazeTemplate.length}px`;
 //     cellDiv.innerText = cell;
 //     templateContainer.appendChild(cellDiv);
 //   });
@@ -28,8 +28,8 @@ import { GameConfig } from "./types/GameConfig";
 // });
 
 const gameConfig: GameConfig = {
-  gridCellSize: 15,
-  mapTemplate, // might be able to expand this to an array of mapTemplates that represent the different levels of the game
+  gridCellSize: 20,
+  mapTemplate: mazeTemplate, // might be able to expand this to an array of mapTemplates that represent the different levels of the game
   canvas: document.getElementById("canvas") as HTMLCanvasElement,
 };
 

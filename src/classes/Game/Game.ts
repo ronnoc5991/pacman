@@ -42,7 +42,7 @@ export class Game {
     this.livesCount = 3;
     this.playerCharacter = new PlayerCharacter(
       (config.gridCellSize - 1) * 2,
-      1
+      2
     );
     this.nonPlayerCharacters = Array.from({ length: 1 }).map(
       () => new NonPlayerCharacter((config.gridCellSize - 1) * 2, 1, this.mode)
@@ -63,7 +63,7 @@ export class Game {
     if (this.modeChangingTimeout) clearTimeout(this.modeChangingTimeout);
     this.modeChangingTimeout = setTimeout(
       () => this.setMode(this.defaultMode),
-      30000 // TODO: Replace this duration with some sort of time table based on level number and score and new game mode
+      5000 // TODO: Replace this duration with some sort of time table based on level number and score and new game mode
     );
   }
 

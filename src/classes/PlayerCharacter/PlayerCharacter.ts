@@ -15,22 +15,24 @@ export class PlayerCharacter extends Character {
   public updatePosition() {
     if (this.isPositionAvailable === null) return;
     // TODO: call this loop equal to the velocity of our character?
-    if (
-      this.direction !== this.nextDirection &&
-      this.isPositionAvailable(
-        getHitbox(this.getNextPosition(this.nextDirection), this.size)
-      )
-    ) {
-      this.setDirection(this.nextDirection);
-    }
+    for (let iterator = 0; iterator < this.velocity; iterator++) {
+      if (
+        this.direction !== this.nextDirection &&
+        this.isPositionAvailable(
+          getHitbox(this.getNextPosition(this.nextDirection), this.size)
+        )
+      ) {
+        this.setDirection(this.nextDirection);
+      }
 
-    if (
-      this.isPositionAvailable(
-        getHitbox(this.getNextPosition(this.direction), this.size)
-      )
-    ) {
-      this.position = this.getNextPosition();
-      this.updateHitbox();
+      if (
+        this.isPositionAvailable(
+          getHitbox(this.getNextPosition(this.direction), this.size)
+        )
+      ) {
+        this.position = this.getNextPosition();
+        this.updateHitbox();
+      }
     }
   }
 

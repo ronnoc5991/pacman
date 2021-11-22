@@ -7,12 +7,12 @@ import {
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { GameMode, gameModeMap } from "../../types/GameMode";
-import { GameEvent, gameEventMap, gameEvents } from "../../types/GameEvent";
+import { GameEvent, gameEventMap } from "../../types/GameEvent";
 import { drawBarrier } from "../../utils/drawBarrier";
 import { Hitbox } from "../../types/Hitbox";
 import { Map } from "../../types/Map";
 import { directions, Direction } from "../../types/Direction";
-import { Game } from "../Game/Game";
+import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 // Maze's responsibilities:
 // Know itself: know about the positions of everything (barriers, pellets, teleporters, characters?)
@@ -60,20 +60,41 @@ export class Maze {
     this.characters.forEach((character) => character.updatePosition());
   }
 
-  private handleCollisions() {
-    // rename?
-    if (this.map.pellets.every((pellet) => pellet.hasBeenEaten))
+  private areObjectsInSameCell(
+    objectOne: CollidableObject,
+    objectTwo: CollidableObject
+  ) {
+    return (
+      -1 !==
+      this.map.navigableCells.findIndex(
+        ({ hitbox }) =>
+          objectOne.position.x > hitbox.left &&
+          objectOne.position.x < hitbox.right &&
+          objectOne.position.y > hitbox.top &&
+          objectOne.position.y < hitbox.bottom &&
+          objectTwo.position.x > hitbox.left &&
+          objectTwo.position.x < hitbox.right &&
+          objectTwo.position.y > hitbox.top &&
+          objectTwo.position.y < hitbox.bottom
+      )
+    );
+  }
+
+  private checkForCollisions() {
+    if (
+      this.map.navigableCells.every(
+        ({ pellet }) => pellet === null || pellet.hasBeenEaten
+      )
+    )
       this.onGameEvent(gameEventMap.allPelletsEaten);
 
-    this.map.pellets
-      .filter((pellet) => !pellet.hasBeenEaten)
-      .forEach((pellet) => {
-        if (
-          areCentersColliding(this.playerCharacter.position, pellet.position)
-        ) {
-          pellet.hasBeenEaten = true;
+    this.map.navigableCells
+      .filter(({ pellet }) => pellet !== null && !pellet.hasBeenEaten)
+      .forEach(({ pellet }) => {
+        if (this.areObjectsInSameCell(this.playerCharacter, pellet!)) {
+          pellet!.hasBeenEaten = true;
           this.onGameEvent(
-            pellet.isPowerPellet
+            pellet!.isPowerPellet
               ? gameEventMap.powerPelletEaten
               : gameEventMap.pelletEaten
           );
@@ -83,9 +104,9 @@ export class Maze {
     this.nonPlayerCharacters
       .filter((character) => !character.isEaten)
       .forEach((nonPlayerCharacter) => {
-        const isCollidingWithPlayer = areEdgesColliding(
-          this.playerCharacter.hitbox,
-          nonPlayerCharacter.hitbox
+        const isCollidingWithPlayer = this.areObjectsInSameCell(
+          this.playerCharacter,
+          nonPlayerCharacter
         );
         if (!isCollidingWithPlayer) return;
 
@@ -136,10 +157,11 @@ export class Maze {
     this.map.barriers.forEach((barrier) =>
       drawBarrier(barrier, this.context, this.map.gridCellSize)
     );
-    this.map.pellets.forEach(({ hasBeenEaten, position, size }) => {
-      if (hasBeenEaten) return;
-      drawCircle(this.context, position, size);
-    });
+    this.map.navigableCells
+      .filter(({ pellet }) => pellet !== null && !pellet.hasBeenEaten)
+      .forEach(({ pellet }) => {
+        drawCircle(this.context, pellet!.position, pellet!.size);
+      });
     drawCircle(
       this.context,
       this.playerCharacter.position,
@@ -172,8 +194,8 @@ export class Maze {
   private isCellNavigable(position: Position) {
     return (
       -1 !==
-      this.map.navigableCellCenterPositions.findIndex(
-        (cellPosition) =>
+      this.map.navigableCells.findIndex(
+        ({ position: cellPosition }) =>
           cellPosition.x === position.x && cellPosition.y === position.y
       )
     );
@@ -210,7 +232,7 @@ export class Maze {
   public update() {
     this.clearCanvas();
     this.updatePositions();
-    this.handleCollisions();
+    this.checkForCollisions();
     this.renderOnCanvas();
   }
 

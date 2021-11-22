@@ -1,9 +1,6 @@
 import { Hitbox } from "../types/Hitbox";
 import { Position } from "../types/Position";
 
-// Rethink what type of collision testing we will use here
-// Maybe we test to see if the two characters are occupying the same cell, much like the real Pacman?
-
 export const areCentersColliding = (
   positionOne: Position,
   positionTwo: Position

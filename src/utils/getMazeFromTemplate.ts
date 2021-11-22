@@ -9,17 +9,17 @@ import { Teleporter } from "../classes/Teleporter/Teleporter";
 import { getBarrier } from "./getBarrier";
 import { Barrier } from "../classes/Barrier/Barrier";
 import { Map } from "../types/Map";
+import { NavigableCell } from "../classes/NavigableCell/NavigableCell";
 
 export const getMazeFromTemplate = (
   mapTemplate: MazeTemplate,
   gridCellSize: number
 ): Map => {
   let barriers: Array<Barrier> = [];
-  const navigableCellCenterPositions: Array<Position> = [];
+  const navigableCells: Array<NavigableCell> = [];
   let initialPlayerPosition = { x: 0, y: 0 };
   let initialNonPlayerCharacterPositions: Array<Position> = [];
   let teleporters: Array<Teleporter> = [];
-  const pellets: Array<Pellet> = [];
   const mazeHeight = mapTemplate.length * gridCellSize;
   const mazeWidth = mapTemplate[0].length * gridCellSize;
   const nonPlayerCharacterDefaultTargetTiles = [
@@ -46,7 +46,7 @@ export const getMazeFromTemplate = (
       switch (cell) {
         case mazeTemplateCellValueMap.playerCharacter:
           initialPlayerPosition = { x, y };
-          navigableCellCenterPositions.push({ x, y });
+          navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
           break;
         case mazeTemplateCellValueMap.barrier:
           const adjacentCells: AdjacentCellValueMap = {
@@ -78,20 +78,32 @@ export const getMazeFromTemplate = (
 
           break;
         case mazeTemplateCellValueMap.pellet:
-          pellets.push(new Pellet({ x, y }, gridCellSize / 2));
-          navigableCellCenterPositions.push({ x, y });
+          // pellets.push(new Pellet({ x, y }, gridCellSize / 2));
+          navigableCells.push(
+            new NavigableCell(
+              { x, y },
+              gridCellSize,
+              new Pellet({ x, y }, gridCellSize / 2)
+            )
+          );
           break;
         case mazeTemplateCellValueMap.powerPellet:
-          pellets.push(new Pellet({ x, y }, gridCellSize, true));
-          navigableCellCenterPositions.push({ x, y });
+          // pellets.push(new Pellet({ x, y }, gridCellSize, true));
+          navigableCells.push(
+            new NavigableCell(
+              { x, y },
+              gridCellSize,
+              new Pellet({ x, y }, gridCellSize, true)
+            )
+          );
           break;
         case mazeTemplateCellValueMap.empty:
-          navigableCellCenterPositions.push({ x, y });
+          navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
           break;
         case mazeTemplateCellValueMap.ghostStart:
           ghostReviveTargetTilePosition = { x, y };
           initialNonPlayerCharacterPositions.push({ x, y });
-          navigableCellCenterPositions.push({ x, y });
+          navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
           break;
         case mazeTemplateCellValueMap.ghostCage:
           // store this value in an array
@@ -107,16 +119,15 @@ export const getMazeFromTemplate = (
   });
 
   return {
-    gridCellSize,
+    gridCellSize, // I want this to not be necessary somehow...
     barriers,
-    navigableCellCenterPositions,
+    navigableCells,
     initialPlayerPosition,
     nonPlayerCharacterConfig: {
       initialPositions: initialNonPlayerCharacterPositions,
       scatterTargetTilePositions: nonPlayerCharacterDefaultTargetTiles,
       reviveTargetTilePosition: ghostReviveTargetTilePosition,
     },
-    pellets,
     teleporters,
   };
 };

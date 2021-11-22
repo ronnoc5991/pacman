@@ -1,6 +1,6 @@
 import { MazeTemplate } from "../types/MazeTemplate";
 
-export const mapTemplate: MazeTemplate = [
+export const mazeTemplate: MazeTemplate = [
   [
     "b",
     "b",

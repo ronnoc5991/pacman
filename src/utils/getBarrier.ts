@@ -12,7 +12,7 @@ const blockingCellValues = [mazeTemplateCellValueMap.barrier, null];
 const isBlockingValue = (value: TemplateCellValue | null) =>
   blockingCellValues.includes(value);
 
-// TODO: Write function that searches mapTemplate for outer edges and creates an outline for them
+// TODO: Write function that searches mazeTemplate for outer edges and creates an outline for them
 
 export const getBarrier = (
   { x, y }: Position,

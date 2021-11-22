@@ -79,12 +79,15 @@ export class NonPlayerCharacter extends Character {
           ),
         };
       })
-      .reduce((previousValue, currentValue) => {
-        return previousValue.distanceToTargetTile <
-          currentValue.distanceToTargetTile
-          ? previousValue
-          : currentValue;
-      });
+      .reduce(
+        (previousValue, currentValue) => {
+          return previousValue.distanceToTargetTile <
+            currentValue.distanceToTargetTile
+            ? previousValue
+            : currentValue;
+        },
+        { distanceToTargetTile: 10000, direction: this.direction }
+      );
     return newDirection.direction;
   }
 

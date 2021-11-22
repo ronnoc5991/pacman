@@ -3,19 +3,17 @@ import { Direction } from "../../types/Direction";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 export class Character extends CollidableObject {
-  position: Position;
   size: number;
   velocity: number;
   direction: Direction = "left";
 
   constructor(position: Position, size: number, velocity: number) {
-    super({
+    super(position, {
       top: position.y - size / 2,
       right: position.x + size / 2,
       bottom: position.y + size / 2,
       left: position.x - size / 2,
     });
-    this.position = position;
     this.size = size;
     this.velocity = velocity;
   }
@@ -37,16 +35,16 @@ export class Character extends CollidableObject {
     const nextPosition = { ...position } as Position;
     switch (direction) {
       case "up":
-        nextPosition.y -= this.velocity;
+        nextPosition.y -= 1;
         break;
       case "right":
-        nextPosition.x += this.velocity;
+        nextPosition.x += 1;
         break;
       case "down":
-        nextPosition.y += this.velocity;
+        nextPosition.y += 1;
         break;
       case "left":
-        nextPosition.x -= this.velocity;
+        nextPosition.x -= 1;
         break;
       default:
         //do nothing

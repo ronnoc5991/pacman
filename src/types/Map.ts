@@ -1,13 +1,12 @@
 import { Position } from "./Position";
-import { Pellet } from "../classes/Pellet/Pellet";
 import { Barrier } from "../classes/Barrier/Barrier";
 import { Teleporter } from "../classes/Teleporter/Teleporter";
+import { NavigableCell } from "../classes/NavigableCell/NavigableCell";
 
 export type Map = {
   gridCellSize: number;
   barriers: Array<Barrier>;
-  navigableCellCenterPositions: Array<Position>;
-  pellets: Array<Pellet>;
+  navigableCells: Array<NavigableCell>;
   initialPlayerPosition: Position;
   teleporters: Array<Teleporter>;
   nonPlayerCharacterConfig: {
