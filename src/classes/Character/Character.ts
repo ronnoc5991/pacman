@@ -5,9 +5,14 @@ import { CollidableObject } from "../CollidableObject/CollidableObject";
 export class Character extends CollidableObject {
   size: number;
   velocity: number;
-  direction: Direction = "left";
+  direction: Direction;
 
-  constructor(position: Position, size: number, velocity: number) {
+  constructor(
+    position: Position,
+    size: number,
+    velocity: number,
+    direction: Direction = "left" // What is the logic behind this?
+  ) {
     super(position, {
       top: position.y - size / 2,
       right: position.x + size / 2,
@@ -16,6 +21,7 @@ export class Character extends CollidableObject {
     });
     this.size = size;
     this.velocity = velocity;
+    this.direction = direction;
   }
 
   protected updateHitbox(position: Position = this.position) {

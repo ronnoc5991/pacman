@@ -4,15 +4,11 @@ import { directions, Direction } from "../../types/Direction";
 import { Hitbox } from "../../types/Hitbox";
 import { getHitbox } from "../../utils/getHitbox";
 import { GameMode, gameModeMap } from "../../types/GameMode";
-import { GameEvent, gameEventMap } from "../../types/GameEvent";
-
-// NPC's responsibilities:
-// Return home when eaten (variant of path finding algo)
-
-// TODO: Rework NPCs so that they use target tiles in order to guide their navigation
-// they can have a fixed target tile in return to home mode?
+import { CollisionEvent, GameEvent, gameEventMap } from "../../types/GameEvent";
+import { NonPlayerCharacterName } from "../../types/NonPlayerCharacterNames";
 
 export class NonPlayerCharacter extends Character {
+  name: NonPlayerCharacterName;
   directions: ReadonlyArray<Direction>;
   backwards: Direction;
   isPositionAvailable: ((hitbox: Hitbox) => boolean) | null = null;
@@ -26,13 +22,22 @@ export class NonPlayerCharacter extends Character {
   gameMode: GameMode;
   defaultTargetTilePosition: Position | null = null;
   isEaten: boolean = false;
-  reviveTargetTilePosition: Position | null = null;
+  reviveTargetTile: Position | null = null;
+  exitTargetTile: Position | null = null;
+  isInCage: boolean;
 
-  constructor(size: number, velocity: number, gameMode: GameMode) {
+  constructor(
+    name: NonPlayerCharacterName,
+    size: number,
+    velocity: number,
+    gameMode: GameMode
+  ) {
     super({ x: 0, y: 0 }, size, velocity);
+    this.name = name;
     this.directions = directions;
     this.backwards = "right";
     this.gameMode = gameMode;
+    this.isInCage = name !== "blinky";
   }
 
   private reverseDirection() {
@@ -57,6 +62,11 @@ export class NonPlayerCharacter extends Character {
         this.backwards = "right";
         break;
     }
+  }
+
+  public setDirection(direction: Direction) {
+    this.direction = direction;
+    this.setBackwards();
   }
 
   private chooseDirection(
@@ -91,13 +101,40 @@ export class NonPlayerCharacter extends Character {
     return newDirection.direction;
   }
 
+  public onCollision(event: CollisionEvent) {
+    switch (event) {
+      case "playerCharacterNonPlayerCharacter":
+        // this does not necessarily mean that we are eaten
+        this.isEaten = true;
+        console.log("eaten");
+        break;
+      case "nonPlayerCharacterReviveTile":
+        this.isEaten = false;
+        this.isInCage = true;
+        this.reverseDirection();
+        break;
+      case "nonPlayerCharacterExitTile":
+        this.isInCage = false;
+        break;
+    }
+  }
+
   public onEvent(event: GameEvent) {
     switch (event) {
       case "nonPlayerCharacterEaten":
         this.isEaten = true;
+        console.log("eaten");
         break;
       case "nonPlayerCharacterRevived":
         this.isEaten = false;
+        this.isInCage = true;
+        this.reverseDirection();
+        console.log("revived");
+        console.log("in cage");
+        break;
+      case "nonPlayerCharacterExit":
+        this.isInCage = false;
+        console.log("out of cage");
         break;
     }
   }
@@ -119,13 +156,18 @@ export class NonPlayerCharacter extends Character {
   private getTargetTilePosition() {
     if (
       this.getPlayerCharacterPosition === null ||
-      !this.reviveTargetTilePosition ||
-      !this.defaultTargetTilePosition
+      !this.reviveTargetTile ||
+      !this.defaultTargetTilePosition ||
+      !this.exitTargetTile
     )
       return { x: 0, y: 0 };
 
     if (this.isEaten) {
-      return this.reviveTargetTilePosition;
+      return this.reviveTargetTile;
+    }
+
+    if (this.isInCage) {
+      return this.exitTargetTile;
     }
 
     if (this.gameMode === gameModeMap.scatter) {
@@ -146,6 +188,14 @@ export class NonPlayerCharacter extends Character {
     )
       return;
 
+    if (
+      this.getPossibleDirections(this.position).filter(
+        (direction) => direction !== this.backwards
+      ).length === 0
+    ) {
+      this.reverseDirection();
+    }
+
     if (this.isPositionIntersection(this.position)) {
       const possibleDirections = this.getPossibleDirections(
         this.position
@@ -160,8 +210,7 @@ export class NonPlayerCharacter extends Character {
               this.getTargetTilePosition()
             );
       if (newDirection) {
-        this.direction = newDirection;
-        this.setBackwards();
+        this.setDirection(newDirection);
       }
     }
 
@@ -183,7 +232,8 @@ export class NonPlayerCharacter extends Character {
       direction: Direction
     ) => Position,
     defaultTargetTilePosition: Position,
-    reviveTargetTilePosition: Position
+    reviveTargetTile: Position,
+    exitTargetTile: Position
   ) {
     this.isPositionAvailable = isPositionAvailable;
     this.isPositionIntersection = isPositionIntersection;
@@ -191,6 +241,7 @@ export class NonPlayerCharacter extends Character {
     this.getPlayerCharacterPosition = getPlayerCharacterPosition;
     this.getAdjacentCellCenterPosition = getAdjacentCellCenterPosition;
     this.defaultTargetTilePosition = defaultTargetTilePosition;
-    this.reviveTargetTilePosition = reviveTargetTilePosition;
+    this.reviveTargetTile = reviveTargetTile;
+    this.exitTargetTile = exitTargetTile;
   }
 }

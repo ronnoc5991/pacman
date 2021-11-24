@@ -13,14 +13,17 @@ export class Barrier {
   position: Position;
   hitboxes: Array<Hitbox>;
   variant: BarrierVariant;
+  isGhostPenExit: boolean;
 
   constructor(
     position: Position,
     hitboxes: Array<Hitbox>,
-    variant: BarrierVariant
+    variant: BarrierVariant,
+    isGhostPenExit: boolean = false
   ) {
     this.position = position;
     this.hitboxes = hitboxes;
     this.variant = variant;
+    this.isGhostPenExit = isGhostPenExit;
   }
 }

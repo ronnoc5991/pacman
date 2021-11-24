@@ -3,11 +3,16 @@ const templateCellValues = [
   "b", // barrier
   "p", // pellet
   "pp", // power pellet
-  "gs", // ghost start
+  "bs", // blinky start
+  "cs", // clyde start
+  "ps", // pinky start
+  "is", // inky start
   "gc", // ghost cage
   "ge", // ghost exit
+  "gp", // ghost path
   "e", // empty
   "t", // teleporter
+  "v", // void
 ] as const;
 
 export type TemplateCellValue = typeof templateCellValues[number];
@@ -17,11 +22,16 @@ type MazeTemplateCellMeaning =
   | "barrier"
   | "pellet"
   | "powerPellet"
+  | "blinkyStart"
+  | "clydeStart"
+  | "pinkyStart"
+  | "inkyStart"
   | "ghostCage"
-  | "ghostStart"
   | "ghostExit"
+  | "ghostPath"
   | "empty"
-  | "teleporter";
+  | "teleporter"
+  | "void";
 
 export const mazeTemplateCellValueMap: Record<
   MazeTemplateCellMeaning,
@@ -31,11 +41,16 @@ export const mazeTemplateCellValueMap: Record<
   barrier: "b",
   pellet: "p",
   powerPellet: "pp",
-  ghostStart: "gs",
+  blinkyStart: "bs",
+  clydeStart: "cs",
+  inkyStart: "is",
+  pinkyStart: "ps",
   ghostCage: "gc",
   ghostExit: "ge",
+  ghostPath: "gp",
   empty: "e",
   teleporter: "t",
+  void: "v",
 };
 
 export type MazeTemplate = Array<Array<TemplateCellValue>>;

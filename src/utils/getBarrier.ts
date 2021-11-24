@@ -7,7 +7,15 @@ import { Position } from "../types/Position";
 import { getHitbox } from "./getHitbox";
 import { Barrier, BarrierVariant } from "../classes/Barrier/Barrier";
 
-const blockingCellValues = [mazeTemplateCellValueMap.barrier, null];
+const blockingCellValues = [
+  mazeTemplateCellValueMap.barrier,
+  null,
+  mazeTemplateCellValueMap.ghostExit,
+  mazeTemplateCellValueMap.void,
+  mazeTemplateCellValueMap.inkyStart,
+  mazeTemplateCellValueMap.clydeStart,
+  mazeTemplateCellValueMap.ghostPath,
+];
 
 const isBlockingValue = (value: TemplateCellValue | null) =>
   blockingCellValues.includes(value);
@@ -93,17 +101,21 @@ export const getBarrier = (
     isTopLeftQuadrantBlocked && isBottomLeftQuadrantBlocked;
   const isRightColumnBlocked =
     isTopRightQuadrantBlocked && isBottomRightQuadrantBlocked;
-  // we are returning a Barrier
-  // a barrier has hitboxes
-  // and a line or lines that need to be drawn
 
-  // what type of line is it?
   const isHorizontalLine =
     (isTopRowBlocked && !isBottomRowBlocked) ||
-    (!isTopRowBlocked && isBottomRowBlocked);
+    (!isTopRowBlocked && isBottomRowBlocked) ||
+    (!isTopRowBlocked &&
+      !isBottomRowBlocked &&
+      isBlockingValue(middleLeft) &&
+      isBlockingValue(middleRight));
   const isVerticalLine =
     (isLeftColumnBlocked && !isRightColumnBlocked) ||
-    (!isLeftColumnBlocked && isRightColumnBlocked);
+    (!isLeftColumnBlocked && isRightColumnBlocked) ||
+    (!isLeftColumnBlocked &&
+      !isRightColumnBlocked &&
+      isBlockingValue(topMiddle) &&
+      isBlockingValue(bottomMiddle));
   const isTopLeftCorner =
     (isTopLeftQuadrantBlocked &&
       !isTopRightQuadrantBlocked &&
@@ -112,7 +124,13 @@ export const getBarrier = (
     (!isTopLeftQuadrantBlocked &&
       isTopRightQuadrantBlocked &&
       isBottomRightQuadrantBlocked &&
-      isBottomLeftQuadrantBlocked);
+      isBottomLeftQuadrantBlocked) ||
+    (!isTopLeftQuadrantBlocked &&
+      !isTopRightQuadrantBlocked &&
+      !isBottomRightQuadrantBlocked &&
+      !isBottomLeftQuadrantBlocked &&
+      isBlockingValue(middleLeft) &&
+      isBlockingValue(topMiddle));
   const isTopRightCorner =
     (isTopRightQuadrantBlocked &&
       !isBottomRightQuadrantBlocked &&
@@ -121,7 +139,13 @@ export const getBarrier = (
     (!isTopRightQuadrantBlocked &&
       isBottomRightQuadrantBlocked &&
       isBottomLeftQuadrantBlocked &&
-      isTopLeftQuadrantBlocked);
+      isTopLeftQuadrantBlocked) ||
+    (!isTopLeftQuadrantBlocked &&
+      !isTopRightQuadrantBlocked &&
+      !isBottomRightQuadrantBlocked &&
+      !isBottomLeftQuadrantBlocked &&
+      isBlockingValue(middleRight) &&
+      isBlockingValue(topMiddle));
   const isBottomRightCorner =
     (isBottomRightQuadrantBlocked &&
       !isBottomLeftQuadrantBlocked &&
@@ -130,7 +154,13 @@ export const getBarrier = (
     (!isBottomRightQuadrantBlocked &&
       isBottomLeftQuadrantBlocked &&
       isTopLeftQuadrantBlocked &&
-      isTopRightQuadrantBlocked);
+      isTopRightQuadrantBlocked) ||
+    (!isTopLeftQuadrantBlocked &&
+      !isTopRightQuadrantBlocked &&
+      !isBottomRightQuadrantBlocked &&
+      !isBottomLeftQuadrantBlocked &&
+      isBlockingValue(middleRight) &&
+      isBlockingValue(bottomMiddle));
   const isBottomLeftCorner =
     (isBottomLeftQuadrantBlocked &&
       !isTopLeftQuadrantBlocked &&
@@ -139,7 +169,13 @@ export const getBarrier = (
     (!isBottomLeftQuadrantBlocked &&
       isTopLeftQuadrantBlocked &&
       isTopRightQuadrantBlocked &&
-      isBottomRightQuadrantBlocked);
+      isBottomRightQuadrantBlocked) ||
+    (!isTopLeftQuadrantBlocked &&
+      !isTopRightQuadrantBlocked &&
+      !isBottomRightQuadrantBlocked &&
+      !isBottomLeftQuadrantBlocked &&
+      isBlockingValue(middleLeft) &&
+      isBlockingValue(bottomMiddle));
 
   if (isHorizontalLine) variant = "horizontal";
   if (isVerticalLine) variant = "vertical";

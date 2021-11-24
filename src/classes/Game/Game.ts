@@ -7,6 +7,7 @@ import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
 import { Map } from "../../types/Map";
+import { nonPlayerCharacterNames } from "../../types/NonPlayerCharacterNames";
 
 // The Game's responsibilities:
 // Keep score (incl: lives, round, points)
@@ -44,8 +45,14 @@ export class Game {
       (config.gridCellSize - 1) * 2,
       2
     );
-    this.nonPlayerCharacters = Array.from({ length: 1 }).map(
-      () => new NonPlayerCharacter((config.gridCellSize - 1) * 2, 1, this.mode)
+    this.nonPlayerCharacters = nonPlayerCharacterNames.map(
+      (characterName) =>
+        new NonPlayerCharacter(
+          characterName,
+          (config.gridCellSize - 1) * 2,
+          1,
+          this.mode
+        )
     );
     this.config.canvas.height =
       this.config.gridCellSize * this.config.mapTemplate.length;
@@ -67,17 +74,21 @@ export class Game {
     );
   }
 
+  private increaseScore(scoreIncrease: number) {
+    this.score += scoreIncrease;
+  }
+
   private onEvent(event: GameEvent) {
     switch (event) {
       case "pelletEaten":
-        this.score += 10;
+        this.increaseScore(10);
         break;
       case "powerPelletEaten":
-        this.score += 50;
+        this.increaseScore(50);
         this.updateGameMode(gameModeMap.flee);
         break;
       case "nonPlayerCharacterEaten":
-        this.score += 100;
+        this.increaseScore(100);
         break;
       case "playerCharacterEaten":
         this.livesCount -= 1;

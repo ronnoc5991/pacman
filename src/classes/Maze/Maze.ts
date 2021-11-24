@@ -7,7 +7,11 @@ import {
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { GameMode, gameModeMap } from "../../types/GameMode";
-import { GameEvent, gameEventMap } from "../../types/GameEvent";
+import {
+  collisionEventMap,
+  GameEvent,
+  gameEventMap,
+} from "../../types/GameEvent";
 import { drawBarrier } from "../../utils/drawBarrier";
 import { Hitbox } from "../../types/Hitbox";
 import { Map } from "../../types/Map";
@@ -19,6 +23,9 @@ import { CollidableObject } from "../CollidableObject/CollidableObject";
 // maybe change the name back to Board?
 // Question: Should the Maze have the responsibility of rendering? If not, where is the game rendered?
 // TODO: Barriers should be drawn only once on a separate canvas, no need to redraw them so often
+
+// Maybe the maze reports collisions to the game, then the game dispatches events to the characters?
+// that way, the maze is not communicating with the characters?  But the characters do need to query the maze for information...
 
 export class Maze {
   canvas: HTMLCanvasElement;
@@ -118,17 +125,23 @@ export class Maze {
         }
       });
 
-    this.nonPlayerCharacters
-      .filter((character) => character.isEaten)
-      .forEach((character) => {
-        if (
-          areCentersColliding(
-            character.position,
-            this.map.nonPlayerCharacterConfig.reviveTargetTilePosition
-          )
+    this.nonPlayerCharacters.forEach((character) => {
+      if (
+        areCentersColliding(
+          character.position,
+          this.map.nonPlayerCharacterConfigs.reviveTargetTile
         )
-          character.onEvent(gameEventMap.nonPlayerCharacterRevived);
-      });
+      ) {
+        character.onCollision(collisionEventMap.nonPlayerCharacterReviveTile);
+      }
+      if (
+        areCentersColliding(
+          character.position,
+          this.map.nonPlayerCharacterConfigs.exitTargetTile
+        )
+      )
+        character.onCollision(collisionEventMap.nonPlayerCharacterExitTile);
+    });
 
     if (!this.map.teleporters) return;
     this.characters.forEach((character) => {
@@ -176,7 +189,7 @@ export class Maze {
     this.playerCharacter.setPosition(this.map.initialPlayerPosition);
     this.nonPlayerCharacters.forEach((character, index) =>
       character.setPosition(
-        this.map.nonPlayerCharacterConfig.initialPositions[index]
+        this.map.nonPlayerCharacterConfigs[character.name].initialPosition!
       )
     );
   }
@@ -203,10 +216,51 @@ export class Maze {
 
   private getPossibleDirections(position: Position): Array<Direction> {
     return directions.filter((direction) =>
-      this.isCellNavigable(
-        this.getAdjacentCellCenterPosition(position, direction)
-      )
+      this.isDirectionNavigable(position, direction)
     );
+  }
+
+  private isDirectionNavigable(
+    { x, y }: Position,
+    direction: Direction
+  ): boolean {
+    let isNavigable = false;
+    switch (direction) {
+      case "up":
+        for (let i = this.map.gridCellSize; i > 0; i--) {
+          const position = { x, y: y - i };
+          if (this.isCellNavigable(position)) {
+            isNavigable = true;
+          }
+        }
+        break;
+      case "right":
+        for (let i = this.map.gridCellSize; i > 0; i--) {
+          const position = { x: x + i, y };
+          if (this.isCellNavigable(position)) {
+            isNavigable = true;
+          }
+        }
+        break;
+      case "down":
+        for (let i = this.map.gridCellSize; i > 0; i--) {
+          const position = { x, y: y + i };
+          if (this.isCellNavigable(position)) {
+            isNavigable = true;
+          }
+        }
+        break;
+      case "left":
+        for (let i = this.map.gridCellSize; i > 0; i--) {
+          const position = { x: x - i, y };
+          if (this.isCellNavigable(position)) {
+            isNavigable = true;
+          }
+        }
+        break;
+    }
+    // console.log(direction, isNavigable);
+    return isNavigable;
   }
 
   private getAdjacentCellCenterPosition(
@@ -249,8 +303,9 @@ export class Maze {
         () => this.playerCharacter.position,
         (position, direction) =>
           this.getAdjacentCellCenterPosition(position, direction),
-        this.map.nonPlayerCharacterConfig.scatterTargetTilePositions[index],
-        this.map.nonPlayerCharacterConfig.reviveTargetTilePosition
+        this.map.nonPlayerCharacterConfigs[character.name].scatterTargetTile,
+        this.map.nonPlayerCharacterConfigs.reviveTargetTile,
+        this.map.nonPlayerCharacterConfigs.exitTargetTile
       )
     );
   }
