@@ -48,13 +48,17 @@ export const getMazeFromTemplate = (
       const x = gridCellSize / 2 + gridCellSize * columnIndex;
       const y = gridCellSize / 2 + gridCellSize * rowIndex;
 
-      if (columnIndex === 0 && cell === mazeTemplateCellValueMap.teleporter)
+      if (columnIndex === 0 && cell === mazeTemplateCellValueMap.teleporter) {
         teleporters.push(new Teleporter({ x: x - 2 * gridCellSize, y }));
+        navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+      }
       if (
         columnIndex === row.length - 1 &&
         cell === mazeTemplateCellValueMap.teleporter
-      )
+      ) {
         teleporters.push(new Teleporter({ x: x + 2 * gridCellSize, y }));
+        navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+      }
 
       switch (cell) {
         case mazeTemplateCellValueMap.playerCharacter:

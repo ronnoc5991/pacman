@@ -12,7 +12,7 @@ import { nonPlayerCharacterNames } from "../../types/NonPlayerCharacterNames";
 // The Game's responsibilities:
 // Keep score (incl: lives, round, points)
 // Create Characters
-// Parse Configuration to Render Maze/Round
+// Parse Configuration to Render Maze/Round?
 // Place the Characters in the Maze/Round
 // Listen for game events and react accordingly (updating score/game mode)
 

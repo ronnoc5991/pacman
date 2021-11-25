@@ -22,5 +22,4 @@ export type Map = {
     blinky: nonCharacterPlayerConfig;
     clyde: nonCharacterPlayerConfig;
   };
-  // npc cage position to go here
 };
