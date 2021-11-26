@@ -15,7 +15,6 @@ import {
 import { drawBarrier } from "../../utils/drawBarrier";
 import { Hitbox } from "../../types/Hitbox";
 import { Map } from "../../types/Map";
-import { directions, Direction } from "../../types/Direction";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 // Maze's responsibilities:
@@ -35,7 +34,6 @@ export class Maze {
   characters: Array<PlayerCharacter | NonPlayerCharacter>;
   onGameEvent: (event: GameEvent) => void;
   map: Map;
-  barrierHitboxes: Array<Hitbox>;
   gameMode: GameMode;
 
   constructor(
@@ -53,9 +51,6 @@ export class Maze {
     this.playerCharacter = playerCharacter;
     this.nonPlayerCharacters = nonPlayerCharacters;
     this.characters = [this.playerCharacter, ...this.nonPlayerCharacters];
-    this.barrierHitboxes = this.map.barriers
-      .map((barrier) => barrier.hitboxes)
-      .flat();
     this.gameMode = gameMode;
   }
 
@@ -154,7 +149,7 @@ export class Maze {
         const { position: newPosition } = this.map.teleporters.find(
           (teleporter, index) => index !== indexOfCollidedTeleporter
         )!; // TODO: fix this exclamation mark
-        character.setPosition(newPosition as Position);
+        character.teleport(newPosition as Position);
       }
     });
   }
@@ -167,116 +162,39 @@ export class Maze {
   }
 
   private renderOnCanvas() {
-    this.map.barriers.forEach((barrier) =>
-      drawBarrier(barrier, this.context, this.map.gridCellSize)
+    this.map.barriers.drawable.forEach((barrier) =>
+      drawBarrier(barrier.position, barrier.variant, this.context, 25)
     );
     this.map.navigableCells
       .filter(({ pellet }) => pellet !== null && !pellet.hasBeenEaten)
       .forEach(({ pellet }) => {
-        drawCircle(this.context, pellet!.position, pellet!.size);
+        drawCircle(this.context, pellet!.position, pellet!.size * 25);
       });
     drawCircle(
       this.context,
       this.playerCharacter.position,
-      this.playerCharacter.size
+      this.playerCharacter.size * 25
     );
     this.nonPlayerCharacters.forEach(({ position, size, isEaten }) =>
-      drawCircle(this.context, position, size, isEaten ? "#FF0000" : undefined)
+      drawCircle(
+        this.context,
+        position,
+        size * 25,
+        isEaten ? "#FF0000" : undefined
+      )
     );
   }
 
   private resetCharacterPositions() {
-    this.playerCharacter.setPosition(this.map.initialPlayerPosition);
-    this.nonPlayerCharacters.forEach((character, index) =>
-      character.setPosition(
-        this.map.nonPlayerCharacterConfigs[character.name].initialPosition!
-      )
+    [this.playerCharacter, ...this.nonPlayerCharacters].forEach((character) =>
+      character.goToInitialPosition()
     );
   }
 
   private isPositionAvailable(hitbox: Hitbox) {
-    return this.barrierHitboxes.every((barrierHitbox) => {
-      return !areEdgesColliding(barrierHitbox, hitbox);
+    return this.map.barriers.collidable.every((barrier) => {
+      return !areEdgesColliding(barrier.getHitbox(), hitbox);
     });
-  }
-
-  private isPositionIntersection(position: Position) {
-    return this.isCellNavigable(position);
-  }
-
-  private isCellNavigable(position: Position) {
-    return (
-      -1 !==
-      this.map.navigableCells.findIndex(
-        ({ position: cellPosition }) =>
-          cellPosition.x === position.x && cellPosition.y === position.y
-      )
-    );
-  }
-
-  private getPossibleDirections(position: Position): Array<Direction> {
-    return directions.filter((direction) =>
-      this.isDirectionNavigable(position, direction)
-    );
-  }
-
-  private isDirectionNavigable(
-    { x, y }: Position,
-    direction: Direction
-  ): boolean {
-    let isNavigable = false;
-    switch (direction) {
-      case "up":
-        for (let i = this.map.gridCellSize; i > 0; i--) {
-          const position = { x, y: y - i };
-          if (this.isCellNavigable(position)) {
-            isNavigable = true;
-          }
-        }
-        break;
-      case "right":
-        for (let i = this.map.gridCellSize; i > 0; i--) {
-          const position = { x: x + i, y };
-          if (this.isCellNavigable(position)) {
-            isNavigable = true;
-          }
-        }
-        break;
-      case "down":
-        for (let i = this.map.gridCellSize; i > 0; i--) {
-          const position = { x, y: y + i };
-          if (this.isCellNavigable(position)) {
-            isNavigable = true;
-          }
-        }
-        break;
-      case "left":
-        for (let i = this.map.gridCellSize; i > 0; i--) {
-          const position = { x: x - i, y };
-          if (this.isCellNavigable(position)) {
-            isNavigable = true;
-          }
-        }
-        break;
-    }
-    // console.log(direction, isNavigable);
-    return isNavigable;
-  }
-
-  private getAdjacentCellCenterPosition(
-    { x, y }: Position,
-    direction: Direction
-  ): Position {
-    switch (direction) {
-      case "up":
-        return { x, y: y - this.map.gridCellSize };
-      case "right":
-        return { x: x + this.map.gridCellSize, y };
-      case "down":
-        return { x, y: y + this.map.gridCellSize };
-      case "left":
-        return { x: x - this.map.gridCellSize, y };
-    }
   }
 
   public reset() {
@@ -291,22 +209,21 @@ export class Maze {
   }
 
   public initialize() {
-    this.resetCharacterPositions();
-    this.playerCharacter.initialize((hitbox) =>
+    this.canvas.height = this.map.dimensions.height * 25;
+    this.canvas.width = this.map.dimensions.width * 25;
+    this.playerCharacter.initialize(this.map.initialPlayerPosition, (hitbox) =>
       this.isPositionAvailable(hitbox)
     );
     this.nonPlayerCharacters.forEach((character, index) =>
       character.initialize(
+        this.map.nonPlayerCharacterConfigs[character.name].initialPosition,
         (hitbox) => this.isPositionAvailable(hitbox),
-        (position: Position) => this.isPositionIntersection(position),
-        (position: Position) => this.getPossibleDirections(position),
         () => this.playerCharacter.position,
-        (position, direction) =>
-          this.getAdjacentCellCenterPosition(position, direction),
         this.map.nonPlayerCharacterConfigs[character.name].scatterTargetTile,
         this.map.nonPlayerCharacterConfigs.reviveTargetTile,
         this.map.nonPlayerCharacterConfigs.exitTargetTile
       )
     );
+    this.resetCharacterPositions();
   }
 }

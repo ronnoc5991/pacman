@@ -1,5 +1,6 @@
 import { Position } from "../../types/Position";
 import { Hitbox } from "../../types/Hitbox";
+import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 export type BarrierVariant =
   | "vertical"
@@ -9,21 +10,31 @@ export type BarrierVariant =
   | "bottom-left-corner"
   | "top-left-corner";
 
-export class Barrier {
-  position: Position;
-  hitboxes: Array<Hitbox>;
-  variant: BarrierVariant;
-  isGhostPenExit: boolean;
+// we only care about the variant when we are drawing
+// is a barrier something that has several hitboxes?
+// or is a barrier a hitbox?
+
+// create one hitbox per barrier
+// could save the barrier variant in another object with a position, that would allow use to draw it...
+// but the barrier should not be concerned with how it is drawn
+
+export class Barrier extends CollidableObject {
+  // position: Position;
+  // hitboxes: Array<Hitbox>;
+  // variant: BarrierVariant;
+  // isGhostPenExit: boolean;
 
   constructor(
     position: Position,
-    hitboxes: Array<Hitbox>,
-    variant: BarrierVariant,
-    isGhostPenExit: boolean = false
+    size: number
+    // hitboxes: Array<Hitbox>,
+    // variant: BarrierVariant,
+    // isGhostPenExit: boolean = false
   ) {
-    this.position = position;
-    this.hitboxes = hitboxes;
-    this.variant = variant;
-    this.isGhostPenExit = isGhostPenExit;
+    super(position, size);
+    // this.position = position;
+    // this.hitboxes = hitboxes;
+    // this.variant = variant;
+    // this.isGhostPenExit = isGhostPenExit;
   }
 }

@@ -28,7 +28,6 @@ gridToggleButton?.addEventListener("click", (event) => {
 });
 
 const gameConfig: GameConfig = {
-  gridCellSize: 20,
   mapTemplate: mazeTemplate, // might be able to expand this to an array of mapTemplates that represent the different levels of the game
   canvas: document.getElementById("canvas") as HTMLCanvasElement,
 };

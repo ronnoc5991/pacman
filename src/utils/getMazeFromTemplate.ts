@@ -6,64 +6,64 @@ import {
 } from "../types/MazeTemplate";
 import { Pellet } from "../classes/Pellet/Pellet";
 import { Teleporter } from "../classes/Teleporter/Teleporter";
-import { getBarrier } from "./getBarrier";
-import { Barrier } from "../classes/Barrier/Barrier";
+import { getBarriers } from "./getBarriers";
+import { Barrier, BarrierVariant } from "../classes/Barrier/Barrier";
 import { Map, nonCharacterPlayerConfig } from "../types/Map";
 import { NavigableCell } from "../classes/NavigableCell/NavigableCell";
 
-export const getMazeFromTemplate = (
-  mapTemplate: MazeTemplate,
-  gridCellSize: number
-): Map => {
-  let barriers: Array<Barrier> = [];
+export const getMazeFromTemplate = (mapTemplate: MazeTemplate): Map => {
+  const barriers = {
+    collidable: [] as Array<Barrier>,
+    drawable: [] as Array<{ position: Position; variant: BarrierVariant }>,
+  };
   const navigableCells: Array<NavigableCell> = [];
   let initialPlayerPosition = { x: 0, y: 0 };
   let teleporters: Array<Teleporter> = [];
-  const mazeHeight = mapTemplate.length * gridCellSize;
-  const mazeWidth = mapTemplate[0].length * gridCellSize;
+  const mazeHeight = mapTemplate.length;
+  const mazeWidth = mapTemplate[0].length;
   let ghostExit: Position;
   let ghostPath: Position;
   const blinky: nonCharacterPlayerConfig = {
-    initialPosition: null,
-    scatterTargetTile: { x: mazeWidth + gridCellSize, y: -gridCellSize },
+    initialPosition: { x: 0, y: 0 },
+    scatterTargetTile: { x: mazeWidth + 1, y: -1 },
   };
   const inky: nonCharacterPlayerConfig = {
-    initialPosition: null,
+    initialPosition: { x: 0, y: 0 },
     scatterTargetTile: {
-      x: mazeWidth + gridCellSize,
-      y: mazeHeight + gridCellSize,
+      x: mazeWidth + 1,
+      y: mazeHeight + 1,
     },
   };
   const pinky: nonCharacterPlayerConfig = {
-    initialPosition: null,
-    scatterTargetTile: { x: -gridCellSize, y: -gridCellSize },
+    initialPosition: { x: 0, y: 0 },
+    scatterTargetTile: { x: -1, y: -1 },
   };
   const clyde: nonCharacterPlayerConfig = {
-    initialPosition: null,
-    scatterTargetTile: { x: -gridCellSize, y: mazeHeight + gridCellSize },
+    initialPosition: { x: 0, y: 0 },
+    scatterTargetTile: { x: -1, y: mazeHeight + 1 },
   };
 
   mapTemplate.map((row, rowIndex) => {
     row.map((cell, columnIndex) => {
-      const x = gridCellSize / 2 + gridCellSize * columnIndex;
-      const y = gridCellSize / 2 + gridCellSize * rowIndex;
+      const x = columnIndex + 0.5;
+      const y = rowIndex + 0.5;
 
       if (columnIndex === 0 && cell === mazeTemplateCellValueMap.teleporter) {
-        teleporters.push(new Teleporter({ x: x - 2 * gridCellSize, y }));
-        navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+        teleporters.push(new Teleporter({ x: x - 2, y }));
+        navigableCells.push(new NavigableCell({ x, y }, 1));
       }
       if (
         columnIndex === row.length - 1 &&
         cell === mazeTemplateCellValueMap.teleporter
       ) {
-        teleporters.push(new Teleporter({ x: x + 2 * gridCellSize, y }));
-        navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+        teleporters.push(new Teleporter({ x: x + 2, y }));
+        navigableCells.push(new NavigableCell({ x, y }, 1));
       }
 
       switch (cell) {
         case mazeTemplateCellValueMap.playerCharacter:
           initialPlayerPosition = { x, y };
-          navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+          navigableCells.push(new NavigableCell({ x, y }, 1));
           break;
         case mazeTemplateCellValueMap.barrier:
           const adjacentCells: AdjacentCellValueMap = {
@@ -89,31 +89,29 @@ export const getMazeFromTemplate = (
               : null,
           };
 
-          const barrier = getBarrier({ x, y }, adjacentCells, gridCellSize);
+          const newBarriers = getBarriers({ x, y }, adjacentCells, 1);
 
-          if (barrier) barriers.push(barrier);
+          if (newBarriers) {
+            newBarriers.collidable.forEach((collidableBarrier) =>
+              barriers.collidable.push(collidableBarrier)
+            );
+            if (newBarriers.drawable)
+              barriers.drawable.push(newBarriers.drawable);
+          }
 
           break;
         case mazeTemplateCellValueMap.pellet:
           navigableCells.push(
-            new NavigableCell(
-              { x, y },
-              gridCellSize,
-              new Pellet({ x, y }, gridCellSize / 2)
-            )
+            new NavigableCell({ x, y }, 1, new Pellet({ x, y }, 0.5))
           );
           break;
         case mazeTemplateCellValueMap.powerPellet:
           navigableCells.push(
-            new NavigableCell(
-              { x, y },
-              gridCellSize,
-              new Pellet({ x, y }, gridCellSize, true)
-            )
+            new NavigableCell({ x, y }, 1, new Pellet({ x, y }, 1, true))
           );
           break;
         case mazeTemplateCellValueMap.empty:
-          navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+          navigableCells.push(new NavigableCell({ x, y }, 1));
           break;
         case mazeTemplateCellValueMap.ghostCage:
           // store this value in an array
@@ -141,7 +139,7 @@ export const getMazeFromTemplate = (
               y: (blinky.initialPosition.y + y) / 2,
             };
           }
-          navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+          navigableCells.push(new NavigableCell({ x, y }, 1));
           break;
         case mazeTemplateCellValueMap.inkyStart:
           if (!inky.initialPosition) {
@@ -151,13 +149,13 @@ export const getMazeFromTemplate = (
               x: (inky.initialPosition.x + x) / 2,
               y: (inky.initialPosition.y + y) / 2,
             };
-            navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+            navigableCells.push(new NavigableCell({ x, y }, 1));
           }
           break;
         case mazeTemplateCellValueMap.clydeStart:
           if (!clyde.initialPosition) {
             clyde.initialPosition = { x, y };
-            navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+            navigableCells.push(new NavigableCell({ x, y }, 1));
           } else {
             clyde.initialPosition = {
               x: (clyde.initialPosition.x + x) / 2,
@@ -174,7 +172,7 @@ export const getMazeFromTemplate = (
               y: (pinky.initialPosition.y + y) / 2,
             };
           }
-          navigableCells.push(new NavigableCell({ x, y }, gridCellSize));
+          navigableCells.push(new NavigableCell({ x, y }, 1));
           break;
         case mazeTemplateCellValueMap.ghostPath:
           if (!ghostPath) {
@@ -193,15 +191,22 @@ export const getMazeFromTemplate = (
     });
   });
 
-  navigableCells.push(new NavigableCell(ghostExit!, gridCellSize));
-  navigableCells.push(new NavigableCell(blinky.initialPosition!, gridCellSize));
-  navigableCells.push(new NavigableCell(pinky.initialPosition!, gridCellSize));
-  navigableCells.push(new NavigableCell(inky.initialPosition!, gridCellSize));
-  navigableCells.push(new NavigableCell(clyde.initialPosition!, gridCellSize));
-  navigableCells.push(new NavigableCell(ghostPath!, gridCellSize));
+  navigableCells.push(new NavigableCell(ghostExit!, 1));
+  navigableCells.push(new NavigableCell(blinky.initialPosition!, 1));
+  navigableCells.push(new NavigableCell(pinky.initialPosition!, 1));
+  navigableCells.push(new NavigableCell(inky.initialPosition!, 1));
+  navigableCells.push(new NavigableCell(clyde.initialPosition!, 1));
+  navigableCells.push(new NavigableCell(ghostPath!, 1));
+
+  // return cells
+  // we could grab all of the cells that are barriers and draw them on a maze canvas that does not change
+  // we could grab all of the cells that are not barriers and check them to see if two objects are in the same cell?
 
   return {
-    gridCellSize, // I want this to not be necessary somehow...
+    dimensions: {
+      width: mapTemplate[0].length,
+      height: mapTemplate.length,
+    },
     barriers,
     navigableCells,
     initialPlayerPosition,

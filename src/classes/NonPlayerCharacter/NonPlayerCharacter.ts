@@ -13,12 +13,6 @@ export class NonPlayerCharacter extends Character {
   backwards: Direction;
   isPositionAvailable: ((hitbox: Hitbox) => boolean) | null = null;
   getPlayerCharacterPosition: (() => Position) | null = null;
-  isPositionIntersection: ((position: Position) => boolean) | null = null;
-  getPossibleDirections: ((position: Position) => Array<Direction>) | null =
-    null;
-  getAdjacentCellCenterPosition:
-    | ((position: Position, direction: Direction) => Position)
-    | null = null;
   gameMode: GameMode;
   defaultTargetTilePosition: Position | null = null;
   isEaten: boolean = false;
@@ -30,7 +24,7 @@ export class NonPlayerCharacter extends Character {
     name: NonPlayerCharacterName,
     size: number,
     velocity: number,
-    gameMode: GameMode
+    gameMode: GameMode // don't know if this should be included in constructor???  Think about it
   ) {
     super({ x: 0, y: 0 }, size, velocity);
     this.name = name;
@@ -69,17 +63,16 @@ export class NonPlayerCharacter extends Character {
     this.setBackwards();
   }
 
-  private chooseDirection(
-    directions: Array<Direction>,
+  private getBestDirection(
+    availableDirections: Array<Direction>,
     targetTile: Position
   ): Direction | void {
-    if (this.getAdjacentCellCenterPosition === null) return;
-
-    const newDirection = directions
+    const newDirection = availableDirections
       .map((direction) => {
-        const adjacentCellPosition = this.getAdjacentCellCenterPosition!(
+        const adjacentCellPosition = this.getNextPosition(
+          direction,
           this.position,
-          direction
+          1
         );
         return {
           direction,
@@ -99,6 +92,14 @@ export class NonPlayerCharacter extends Character {
         { distanceToTargetTile: 10000, direction: this.direction }
       );
     return newDirection.direction;
+  }
+
+  public onEventFunction(
+    eventType: "collision" | "modeChange" | "gameEvent",
+    event: "eventNameGoesHere"
+  ) {
+    // call the correct function with the eventName... those can be private functions
+    // this would act as a dispatch function
   }
 
   public onCollision(event: CollisionEvent) {
@@ -177,36 +178,40 @@ export class NonPlayerCharacter extends Character {
     return this.getPlayerCharacterPosition();
   }
 
+  private getAvailableDirections() {
+    return directions.filter((direction) => {
+      if (this.isPositionAvailable === null) return false;
+      return (
+        direction !== this.backwards &&
+        this.isPositionAvailable(
+          this.getNewHitbox(this.getNextPosition(direction))
+        )
+      );
+    });
+  }
+
+  private getRandomDirection(possibleDirections: Array<Direction>) {
+    return possibleDirections[
+      Math.floor(Math.random() * (possibleDirections.length - 1))
+    ];
+  }
+
   public updatePosition() {
     if (
       this.isPositionAvailable === null ||
-      this.isPositionIntersection === null ||
-      this.getPossibleDirections === null ||
-      this.getAdjacentCellCenterPosition === null ||
       this.getPlayerCharacterPosition === null ||
       this.defaultTargetTilePosition === null
     )
       return;
 
-    if (
-      this.getPossibleDirections(this.position).filter(
-        (direction) => direction !== this.backwards
-      ).length === 0
-    ) {
-      this.reverseDirection();
-    }
+    const availableDirections = this.getAvailableDirections();
 
-    if (this.isPositionIntersection(this.position)) {
-      const possibleDirections = this.getPossibleDirections(
-        this.position
-      ).filter((direction) => direction !== this.backwards);
+    if (availableDirections.length > 0) {
       let newDirection =
         this.gameMode === gameModeMap.flee && !this.isEaten
-          ? possibleDirections[
-              Math.floor(Math.random() * (possibleDirections.length - 1))
-            ]
-          : this.chooseDirection(
-              possibleDirections,
+          ? this.getRandomDirection(availableDirections)
+          : this.getBestDirection(
+              availableDirections,
               this.getTargetTilePosition()
             );
       if (newDirection) {
@@ -223,23 +228,16 @@ export class NonPlayerCharacter extends Character {
   }
 
   public initialize(
+    initialPosition: Position,
     isPositionAvailable: (hitbox: Hitbox) => boolean,
-    isPositionIntersection: (position: Position) => boolean,
-    getPossibleDirections: (position: Position) => Array<Direction>,
     getPlayerCharacterPosition: () => Position,
-    getAdjacentCellCenterPosition: (
-      position: Position,
-      direction: Direction
-    ) => Position,
     defaultTargetTilePosition: Position,
     reviveTargetTile: Position,
     exitTargetTile: Position
   ) {
+    this.setInitialPosition(initialPosition);
     this.isPositionAvailable = isPositionAvailable;
-    this.isPositionIntersection = isPositionIntersection;
-    this.getPossibleDirections = getPossibleDirections;
     this.getPlayerCharacterPosition = getPlayerCharacterPosition;
-    this.getAdjacentCellCenterPosition = getAdjacentCellCenterPosition;
     this.defaultTargetTilePosition = defaultTargetTilePosition;
     this.reviveTargetTile = reviveTargetTile;
     this.exitTargetTile = exitTargetTile;

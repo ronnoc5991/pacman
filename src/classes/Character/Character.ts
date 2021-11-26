@@ -1,56 +1,83 @@
 import { Position } from "../../types/Position";
 import { Direction } from "../../types/Direction";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
+import { addFloatingPointNumbers } from "../../utils/addFloatingPointNumbers";
+import { Hitbox } from "../../types/Hitbox";
 
 export class Character extends CollidableObject {
-  size: number;
   velocity: number;
   direction: Direction;
+  initialPosition: Position | null = null;
+  // should also know its starting position
+  // characters should be dispatched an event
+  // that event will tell them to return to their home positions?
 
   constructor(
     position: Position,
     size: number,
     velocity: number,
-    direction: Direction = "left" // What is the logic behind this?
+    direction: Direction = "left"
   ) {
-    super(position, {
-      top: position.y - size / 2,
-      right: position.x + size / 2,
-      bottom: position.y + size / 2,
-      left: position.x - size / 2,
-    });
-    this.size = size;
+    super(position, size);
     this.velocity = velocity;
     this.direction = direction;
   }
 
-  protected updateHitbox(position: Position = this.position) {
-    this.hitbox = {
-      top: position.y - this.size / 2,
-      right: position.x + this.size / 2,
-      bottom: position.y + this.size / 2,
-      left: position.x - this.size / 2,
-    };
+  protected setPosition(position: Position) {
+    this.position = position;
   }
 
-  public setDirection(direction: Direction) {
+  protected setHitbox(hitbox: Hitbox) {
+    this.hitbox = hitbox;
+  }
+
+  protected setDirection(direction: Direction) {
     this.direction = direction;
   }
 
-  public getNextPosition(direction = this.direction, position = this.position) {
+  protected getNewHitbox({ x, y }: Position = this.position) {
+    const halfSize = this.size / 2;
+    return {
+      top: addFloatingPointNumbers(y, -halfSize),
+      right: addFloatingPointNumbers(x, halfSize),
+      bottom: addFloatingPointNumbers(y, halfSize),
+      left: addFloatingPointNumbers(x, -halfSize),
+    };
+  }
+
+  protected updateHitbox(position: Position = this.position) {
+    this.setHitbox(this.getNewHitbox(position));
+  }
+
+  public teleport(newPosition: Position) {
+    this.setPosition(newPosition);
+  }
+
+  public goToInitialPosition() {
+    console.log(this.initialPosition);
+    if (!this.initialPosition) return;
+    this.setPosition(this.initialPosition);
+    this.updateHitbox();
+  }
+
+  protected getNextPosition(
+    direction = this.direction,
+    position = this.position,
+    velocity = this.velocity
+  ) {
     const nextPosition = { ...position } as Position;
     switch (direction) {
       case "up":
-        nextPosition.y -= 1;
+        nextPosition.y = addFloatingPointNumbers(position.y, -velocity);
         break;
       case "right":
-        nextPosition.x += 1;
+        nextPosition.x = addFloatingPointNumbers(position.x, velocity);
         break;
       case "down":
-        nextPosition.y += 1;
+        nextPosition.y = addFloatingPointNumbers(position.y, velocity);
         break;
       case "left":
-        nextPosition.x -= 1;
+        nextPosition.x = addFloatingPointNumbers(position.x, -velocity);
         break;
       default:
         //do nothing
@@ -59,7 +86,7 @@ export class Character extends CollidableObject {
     return nextPosition;
   }
 
-  public setPosition(position: Position) {
-    this.position = position;
+  protected setInitialPosition(initialPosition: Position) {
+    this.initialPosition = initialPosition;
   }
 }

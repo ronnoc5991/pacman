@@ -33,31 +33,18 @@ export class Game {
 
   constructor(config: GameConfig) {
     this.config = config;
-    this.currentMaze = getMazeFromTemplate(
-      config.mapTemplate,
-      config.gridCellSize
-    );
+    this.currentMaze = getMazeFromTemplate(config.mapTemplate);
     this.mode = this.defaultMode;
     this.score = 0;
     this.roundNumber = 0;
     this.livesCount = 3;
-    this.playerCharacter = new PlayerCharacter(
-      (config.gridCellSize - 1) * 2,
-      2
-    );
-    this.nonPlayerCharacters = nonPlayerCharacterNames.map(
-      (characterName) =>
-        new NonPlayerCharacter(
-          characterName,
-          (config.gridCellSize - 1) * 2,
-          1,
-          this.mode
-        )
-    );
-    this.config.canvas.height =
-      this.config.gridCellSize * this.config.mapTemplate.length;
-    this.config.canvas.width =
-      this.config.gridCellSize * this.config.mapTemplate[0].length;
+    this.playerCharacter = new PlayerCharacter(1.8, 0.1);
+    this.nonPlayerCharacters = nonPlayerCharacterNames
+      .filter((character, index) => index === 5)
+      .map(
+        (characterName) =>
+          new NonPlayerCharacter(characterName, 2, 0.05, this.mode)
+      );
   }
 
   private setMode(mode: GameMode) {
@@ -131,3 +118,5 @@ export class Game {
     useAnimationFrame(() => this.maze?.update());
   }
 }
+
+// 0 0.5 1 1.5 2 2.5 3 3.5 4 4.5 5

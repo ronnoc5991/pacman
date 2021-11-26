@@ -1,16 +1,22 @@
 import { Position } from "./Position";
-import { Barrier } from "../classes/Barrier/Barrier";
+import { Barrier, BarrierVariant } from "../classes/Barrier/Barrier";
 import { Teleporter } from "../classes/Teleporter/Teleporter";
 import { NavigableCell } from "../classes/NavigableCell/NavigableCell";
 
 export type nonCharacterPlayerConfig = {
-  initialPosition: Position | null;
+  initialPosition: Position;
   scatterTargetTile: Position;
 };
 
 export type Map = {
-  gridCellSize: number;
-  barriers: Array<Barrier>;
+  dimensions: {
+    width: number;
+    height: number;
+  };
+  barriers: {
+    collidable: Array<Barrier>;
+    drawable: Array<{ position: Position; variant: BarrierVariant }>;
+  };
   navigableCells: Array<NavigableCell>;
   initialPlayerPosition: Position;
   teleporters: Array<Teleporter>;
