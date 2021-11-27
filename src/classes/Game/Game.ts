@@ -8,6 +8,7 @@ import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
 import { Map } from "../../types/Map";
 import { nonPlayerCharacterNames } from "../../types/NonPlayerCharacterNames";
+import { config } from '../../config/config';
 
 // The Game's responsibilities:
 // Keep score (incl: lives, round, points)
@@ -17,7 +18,7 @@ import { nonPlayerCharacterNames } from "../../types/NonPlayerCharacterNames";
 // Listen for game events and react accordingly (updating score/game mode)
 
 export class Game {
-  config: GameConfig;
+  roundTemplates: GameConfig;
   defaultMode: GameMode = gameModeMap.pursue;
   mode: GameMode;
   score: number;
@@ -31,19 +32,19 @@ export class Game {
     () => {}
   );
 
-  constructor(config: GameConfig) {
-    this.config = config;
-    this.currentMaze = getMazeFromTemplate(config.mapTemplate);
+  constructor(roundTemplates: GameConfig) {
+    this.roundTemplates = roundTemplates;
+    this.currentMaze = getMazeFromTemplate(roundTemplates.mapTemplate);
     this.mode = this.defaultMode;
     this.score = 0;
     this.roundNumber = 0;
     this.livesCount = 3;
-    this.playerCharacter = new PlayerCharacter(1.8, 0.1);
+    this.playerCharacter = new PlayerCharacter(config.character.size, config.character.stepSize, config.character.baseVelocity);
     this.nonPlayerCharacters = nonPlayerCharacterNames
-      .filter((character, index) => index === 5)
+      .filter((character, index) => index === 0)
       .map(
         (characterName) =>
-          new NonPlayerCharacter(characterName, 2, 0.05, this.mode)
+          new NonPlayerCharacter(characterName, config.character.size, config.character.stepSize, config.character.baseVelocity, this.mode)
       );
   }
 
@@ -99,7 +100,7 @@ export class Game {
     // TODO: be able to select the correct config object based on round number, mazes should vary in full game
     this.maze = new Maze(
       this.currentMaze,
-      this.config.canvas,
+      this.roundTemplates.canvas,
       this.mode,
       (event: GameEvent) => this.onEvent(event),
       this.playerCharacter,
@@ -118,5 +119,3 @@ export class Game {
     useAnimationFrame(() => this.maze?.update());
   }
 }
-
-// 0 0.5 1 1.5 2 2.5 3 3.5 4 4.5 5

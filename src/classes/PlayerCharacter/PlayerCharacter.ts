@@ -1,47 +1,30 @@
 import { Character } from "../Character/Character";
 import { Direction } from "../../types/Direction";
-import { Hitbox } from "../../types/Hitbox";
-import { getHitbox } from "../../utils/getHitbox";
 import { Position } from "../../types/Position";
 
 export class PlayerCharacter extends Character {
   nextDirection: Direction;
-  isPositionAvailable: ((hitbox: Hitbox) => boolean) | null = null;
 
-  constructor(size: number, velocity: number) {
-    super({ x: 0, y: 0 }, size, velocity);
+  constructor(size: number, stepSize: number, baseVelocity: number) {
+    super({ x: 0, y: 0 }, size, stepSize, baseVelocity, 'left', (position: Position, size: number) => false);
     this.nextDirection = "left";
   }
 
-  // maybe characters should accept an event that tells them to update their positions?
-  // instead of use calling a public function from the Maze/game?
+  private isNextDirectionPossible() {
+    return this.isPositionAvailable(this.getNextPosition(this.nextDirection), this.getSize());
+  }
 
   public updatePosition() {
-    if (this.isPositionAvailable === null) return;
-    // TODO: Refactor to use new velocity system (cells per frame)
-    if (
-      this.direction !== this.nextDirection &&
-      this.isPositionAvailable(
-        getHitbox(this.getNextPosition(this.nextDirection), this.size)
-      )
-    ) {
-      this.setDirection(this.nextDirection);
-    }
-
-    if (
-      this.isPositionAvailable(getHitbox(this.getNextPosition(), this.size))
-    ) {
-      this.position = this.getNextPosition();
-      this.updateHitbox();
-    }
+    if (this.direction !== this.nextDirection && this.isNextDirectionPossible()) this.setDirection(this.nextDirection);
+    if (this.isPositionAvailable(this.getNextPosition(), this.getSize())) this.takeNextStep();
   }
 
   public initialize(
     initialPosition: Position,
-    isPositionAvailable: (hitbox: Hitbox) => boolean
+    isPositionAvailable: (position: Position, size: number) => boolean
   ) {
     this.setInitialPosition(initialPosition);
-    this.isPositionAvailable = isPositionAvailable;
+    this.setIsPositionAvailable(isPositionAvailable);
     window.addEventListener("keydown", (event) => {
       switch (event.key) {
         case "ArrowUp":

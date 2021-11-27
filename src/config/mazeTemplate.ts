@@ -706,7 +706,7 @@ export const mazeTemplate: MazeTemplate = [
     "p",
     "p",
     "c",
-    "e",
+    "c",
     "p",
     "p",
     "p",

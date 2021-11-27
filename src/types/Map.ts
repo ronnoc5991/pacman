@@ -1,7 +1,7 @@
 import { Position } from "./Position";
 import { Barrier, BarrierVariant } from "../classes/Barrier/Barrier";
 import { Teleporter } from "../classes/Teleporter/Teleporter";
-import { NavigableCell } from "../classes/NavigableCell/NavigableCell";
+import { Pellet } from "../classes/Pellet/Pellet";
 
 export type nonCharacterPlayerConfig = {
   initialPosition: Position;
@@ -17,7 +17,7 @@ export type Map = {
     collidable: Array<Barrier>;
     drawable: Array<{ position: Position; variant: BarrierVariant }>;
   };
-  navigableCells: Array<NavigableCell>;
+  pellets: Array<Pellet>;
   initialPlayerPosition: Position;
   teleporters: Array<Teleporter>;
   nonPlayerCharacterConfigs: {

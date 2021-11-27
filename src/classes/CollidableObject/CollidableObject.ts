@@ -11,9 +11,9 @@ export class CollidableObject {
     this.size = size;
     this.hitbox = {
       top: y - size / 2,
-      right: x + size / 2,
       bottom: y + size / 2,
       left: x - size / 2,
+      right: x + size / 2,
     };
   }
 

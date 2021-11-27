@@ -1,17 +1,14 @@
 import { Character } from "../Character/Character";
 import { Position } from "../../types/Position";
 import { directions, Direction } from "../../types/Direction";
-import { Hitbox } from "../../types/Hitbox";
-import { getHitbox } from "../../utils/getHitbox";
 import { GameMode, gameModeMap } from "../../types/GameMode";
-import { CollisionEvent, GameEvent, gameEventMap } from "../../types/GameEvent";
+import { CollisionEvent, GameEvent } from "../../types/GameEvent";
 import { NonPlayerCharacterName } from "../../types/NonPlayerCharacterNames";
 
 export class NonPlayerCharacter extends Character {
   name: NonPlayerCharacterName;
   directions: ReadonlyArray<Direction>;
   backwards: Direction;
-  isPositionAvailable: ((hitbox: Hitbox) => boolean) | null = null;
   getPlayerCharacterPosition: (() => Position) | null = null;
   gameMode: GameMode;
   defaultTargetTilePosition: Position | null = null;
@@ -23,10 +20,11 @@ export class NonPlayerCharacter extends Character {
   constructor(
     name: NonPlayerCharacterName,
     size: number,
+    stepSize: number,
     velocity: number,
     gameMode: GameMode // don't know if this should be included in constructor???  Think about it
   ) {
-    super({ x: 0, y: 0 }, size, velocity);
+    super({ x: 0, y: 0 }, size, stepSize, velocity, 'left', (position: Position, size: number) => false);
     this.name = name;
     this.directions = directions;
     this.backwards = "right";
@@ -61,37 +59,6 @@ export class NonPlayerCharacter extends Character {
   public setDirection(direction: Direction) {
     this.direction = direction;
     this.setBackwards();
-  }
-
-  private getBestDirection(
-    availableDirections: Array<Direction>,
-    targetTile: Position
-  ): Direction | void {
-    const newDirection = availableDirections
-      .map((direction) => {
-        const adjacentCellPosition = this.getNextPosition(
-          direction,
-          this.position,
-          1
-        );
-        return {
-          direction,
-          distanceToTargetTile: Math.sqrt(
-            Math.pow(targetTile.x - adjacentCellPosition.x, 2) +
-              Math.pow(targetTile.y - adjacentCellPosition.y, 2)
-          ),
-        };
-      })
-      .reduce(
-        (previousValue, currentValue) => {
-          return previousValue.distanceToTargetTile <
-            currentValue.distanceToTargetTile
-            ? previousValue
-            : currentValue;
-        },
-        { distanceToTargetTile: 10000, direction: this.direction }
-      );
-    return newDirection.direction;
   }
 
   public onEventFunction(
@@ -180,12 +147,9 @@ export class NonPlayerCharacter extends Character {
 
   private getAvailableDirections() {
     return directions.filter((direction) => {
-      if (this.isPositionAvailable === null) return false;
       return (
         direction !== this.backwards &&
-        this.isPositionAvailable(
-          this.getNewHitbox(this.getNextPosition(direction))
-        )
+        this.isPositionAvailable(this.getNextPosition(direction), this.getSize())
       );
     });
   }
@@ -196,40 +160,54 @@ export class NonPlayerCharacter extends Character {
     ];
   }
 
-  public updatePosition() {
-    if (
-      this.isPositionAvailable === null ||
-      this.getPlayerCharacterPosition === null ||
-      this.defaultTargetTilePosition === null
+  private getBestDirection( // can be simplified
+    availableDirections: Array<Direction>,
+    targetTile: Position
+  ): Direction {
+    const bestDirection = availableDirections
+      .map((direction) => {
+        const adjacentCellPosition = this.getNextPosition(
+          direction,
+          this.position,
+          1
+        );
+        return {
+          direction,
+          distanceToTargetTile: Math.sqrt(
+            Math.pow(targetTile.x - adjacentCellPosition.x, 2) +
+              Math.pow(targetTile.y - adjacentCellPosition.y, 2)
+          ),
+        };
+      })
+      .reduce(
+        (previousValue, currentValue) => {
+          return previousValue.distanceToTargetTile <
+            currentValue.distanceToTargetTile
+            ? previousValue
+            : currentValue;
+        },
+        { distanceToTargetTile: 10000, direction: this.direction }
+      ).direction;
+    return bestDirection;
+  }
+
+  private getNextDirection(availableDirections: Array<Direction>) {
+    return (
+      this.gameMode === gameModeMap.flee && !this.isEaten
+        ? this.getRandomDirection(availableDirections)
+        : this.getBestDirection(availableDirections, this.getTargetTilePosition())
     )
-      return;
+  }
 
+  public updatePosition() {
     const availableDirections = this.getAvailableDirections();
-
-    if (availableDirections.length > 0) {
-      let newDirection =
-        this.gameMode === gameModeMap.flee && !this.isEaten
-          ? this.getRandomDirection(availableDirections)
-          : this.getBestDirection(
-              availableDirections,
-              this.getTargetTilePosition()
-            );
-      if (newDirection) {
-        this.setDirection(newDirection);
-      }
-    }
-
-    if (
-      this.isPositionAvailable(getHitbox(this.getNextPosition(), this.size))
-    ) {
-      this.position = this.getNextPosition();
-      this.updateHitbox();
-    }
+    if (availableDirections.length > 0) this.setDirection(this.getNextDirection(availableDirections));
+    if (this.isPositionAvailable(this.getNextPosition(), this.size)) this.takeNextStep();
   }
 
   public initialize(
     initialPosition: Position,
-    isPositionAvailable: (hitbox: Hitbox) => boolean,
+    isPositionAvailable: (position: Position, size: number) => boolean,
     getPlayerCharacterPosition: () => Position,
     defaultTargetTilePosition: Position,
     reviveTargetTile: Position,

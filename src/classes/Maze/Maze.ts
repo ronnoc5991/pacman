@@ -1,8 +1,8 @@
-import { Position } from "../../types/Position";
 import { drawCircle } from "../../utils/drawCircle";
 import {
   areCentersColliding,
   areEdgesColliding,
+  areObjectsOverlapping,
 } from "../../utils/collisionDetection";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
@@ -15,7 +15,8 @@ import {
 import { drawBarrier } from "../../utils/drawBarrier";
 import { Hitbox } from "../../types/Hitbox";
 import { Map } from "../../types/Map";
-import { CollidableObject } from "../CollidableObject/CollidableObject";
+import { getHitboxForPosition } from "../../utils/getHitboxForPosition";
+import { Position } from "../../types/Position";
 
 // Maze's responsibilities:
 // Know itself: know about the positions of everything (barriers, pellets, teleporters, characters?)
@@ -54,46 +55,26 @@ export class Maze {
     this.gameMode = gameMode;
   }
 
-  private clearCanvas() {
+  private clearCanvas() { // this to be extracted to a rendering class of some kind
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  private updatePositions() {
+  private updateCharacterPositions() {
     this.characters.forEach((character) => character.updatePosition());
-  }
-
-  private areObjectsInSameCell(
-    objectOne: CollidableObject,
-    objectTwo: CollidableObject
-  ) {
-    return (
-      -1 !==
-      this.map.navigableCells.findIndex(
-        ({ hitbox }) =>
-          objectOne.position.x > hitbox.left &&
-          objectOne.position.x < hitbox.right &&
-          objectOne.position.y > hitbox.top &&
-          objectOne.position.y < hitbox.bottom &&
-          objectTwo.position.x > hitbox.left &&
-          objectTwo.position.x < hitbox.right &&
-          objectTwo.position.y > hitbox.top &&
-          objectTwo.position.y < hitbox.bottom
-      )
-    );
   }
 
   private checkForCollisions() {
     if (
-      this.map.navigableCells.every(
-        ({ pellet }) => pellet === null || pellet.hasBeenEaten
+      this.map.pellets.every(
+        (pellet) => pellet === null || pellet.hasBeenEaten
       )
     )
       this.onGameEvent(gameEventMap.allPelletsEaten);
 
-    this.map.navigableCells
-      .filter(({ pellet }) => pellet !== null && !pellet.hasBeenEaten)
-      .forEach(({ pellet }) => {
-        if (this.areObjectsInSameCell(this.playerCharacter, pellet!)) {
+    this.map.pellets
+      .filter(( pellet ) => pellet !== null && !pellet.hasBeenEaten)
+      .forEach(( pellet ) => {
+        if (areCentersColliding(this.playerCharacter.position, pellet.position)) {
           pellet!.hasBeenEaten = true;
           this.onGameEvent(
             pellet!.isPowerPellet
@@ -106,7 +87,7 @@ export class Maze {
     this.nonPlayerCharacters
       .filter((character) => !character.isEaten)
       .forEach((nonPlayerCharacter) => {
-        const isCollidingWithPlayer = this.areObjectsInSameCell(
+        const isCollidingWithPlayer = areObjectsOverlapping(
           this.playerCharacter,
           nonPlayerCharacter
         );
@@ -142,14 +123,11 @@ export class Maze {
     this.characters.forEach((character) => {
       const indexOfCollidedTeleporter = this.map.teleporters.findIndex(
         (teleporter) => {
-          return areCentersColliding(character.position, teleporter.position);
+          return areCentersColliding(character.getPosition(), teleporter.getPosition());
         }
       );
       if (indexOfCollidedTeleporter > -1) {
-        const { position: newPosition } = this.map.teleporters.find(
-          (teleporter, index) => index !== indexOfCollidedTeleporter
-        )!; // TODO: fix this exclamation mark
-        character.teleport(newPosition as Position);
+        character.teleportTo(this.map.teleporters[indexOfCollidedTeleporter].teleportTo);
       }
     });
   }
@@ -165,9 +143,9 @@ export class Maze {
     this.map.barriers.drawable.forEach((barrier) =>
       drawBarrier(barrier.position, barrier.variant, this.context, 25)
     );
-    this.map.navigableCells
-      .filter(({ pellet }) => pellet !== null && !pellet.hasBeenEaten)
-      .forEach(({ pellet }) => {
+    this.map.pellets
+      .filter(( pellet ) => pellet !== null && !pellet.hasBeenEaten)
+      .forEach(( pellet ) => {
         drawCircle(this.context, pellet!.position, pellet!.size * 25);
       });
     drawCircle(
@@ -191,10 +169,10 @@ export class Maze {
     );
   }
 
-  private isPositionAvailable(hitbox: Hitbox) {
+  private isPositionAvailable(position: Position, size: number) {
     return this.map.barriers.collidable.every((barrier) => {
-      return !areEdgesColliding(barrier.getHitbox(), hitbox);
-    });
+      return !areEdgesColliding(barrier.getHitbox(), getHitboxForPosition(position, size))
+    })
   }
 
   public reset() {
@@ -203,7 +181,7 @@ export class Maze {
 
   public update() {
     this.clearCanvas();
-    this.updatePositions();
+    this.updateCharacterPositions();
     this.checkForCollisions();
     this.renderOnCanvas();
   }
@@ -211,13 +189,13 @@ export class Maze {
   public initialize() {
     this.canvas.height = this.map.dimensions.height * 25;
     this.canvas.width = this.map.dimensions.width * 25;
-    this.playerCharacter.initialize(this.map.initialPlayerPosition, (hitbox) =>
-      this.isPositionAvailable(hitbox)
+    this.playerCharacter.initialize(this.map.initialPlayerPosition, (position: Position, size: number) =>
+      this.isPositionAvailable(position, size)
     );
     this.nonPlayerCharacters.forEach((character, index) =>
       character.initialize(
         this.map.nonPlayerCharacterConfigs[character.name].initialPosition,
-        (hitbox) => this.isPositionAvailable(hitbox),
+        (position: Position, size: number) => this.isPositionAvailable(position, size),
         () => this.playerCharacter.position,
         this.map.nonPlayerCharacterConfigs[character.name].scatterTargetTile,
         this.map.nonPlayerCharacterConfigs.reviveTargetTile,
