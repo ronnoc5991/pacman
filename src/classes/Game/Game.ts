@@ -1,47 +1,53 @@
 import { useAnimationFrame } from "../../utils/useAnimationFrame";
-import { Maze } from "../Maze/Maze";
 import { GameMode, gameModeMap } from "../../types/GameMode";
-import { GameEvent } from "../../types/GameEvent";
-import { GameConfig } from "../../types/GameConfig";
+import { collisionEventMap, GameEvent } from "../../types/GameEvent";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
-import { Map } from "../../types/Map";
+import { CharacterPositionConfig, Maze } from "../../types/Maze";
 import { nonPlayerCharacterNames } from "../../types/NonPlayerCharacterNames";
 import { config } from '../../config/config';
-
-// The Game's responsibilities:
-// Keep score (incl: lives, round, points)
-// Create Characters
-// Parse Configuration to Render Maze/Round?
-// Place the Characters in the Maze/Round
-// Listen for game events and react accordingly (updating score/game mode)
+import { CanvasRenderer } from '../CanvasRenderer/CanvasRenderer';
+import { CollisionDetector } from '../CollisionDetector/CollisionDetector';
+import { Position } from "../../types/Position";
+import { Barrier } from "../Barrier/Barrier";
+import { MazeTemplate } from "../../types/MazeTemplate";
+import { Pellet } from "../Pellet/Pellet";
+import { Teleporter } from "../Teleporter/Teleporter";
 
 export class Game {
-  roundTemplates: GameConfig;
-  defaultMode: GameMode = gameModeMap.pursue;
+  mazeTemplates: Array<MazeTemplate>;
+  defaultMode: GameMode = gameModeMap.pursue; // each round follows a pattern of mode changes... figure this out
   mode: GameMode;
   score: number;
   roundNumber: number;
   livesCount: number;
-  currentMaze: Map;
-  maze: Maze | null = null;
+  pellets: Array<Pellet>;
+  teleporters: Array<Teleporter>;
+  characterPositions: CharacterPositionConfig;
   playerCharacter: PlayerCharacter;
   nonPlayerCharacters: Array<NonPlayerCharacter>;
+  collisionDetector: CollisionDetector;
+  renderer: CanvasRenderer;
   modeChangingTimeout: null | ReturnType<typeof setTimeout> = setTimeout(
     () => {}
   );
 
-  constructor(roundTemplates: GameConfig) {
-    this.roundTemplates = roundTemplates;
-    this.currentMaze = getMazeFromTemplate(roundTemplates.mapTemplate);
+  constructor(mazeTemplates: Array<MazeTemplate>) {
+    this.mazeTemplates = mazeTemplates;
     this.mode = this.defaultMode;
     this.score = 0;
     this.roundNumber = 0;
     this.livesCount = 3;
+    const { barriers, characterPositions, dimensions, pellets, teleporters } = getMazeFromTemplate(mazeTemplates[this.roundNumber]);
+    this.renderer = new CanvasRenderer(dimensions, barriers.renderable);
+    this.collisionDetector = new CollisionDetector(barriers.collidable);
+    this.teleporters = teleporters;
+    this.pellets = pellets;
+    this.characterPositions = characterPositions;
     this.playerCharacter = new PlayerCharacter(config.character.size, config.character.stepSize, config.character.baseVelocity);
     this.nonPlayerCharacters = nonPlayerCharacterNames
-      .filter((character, index) => index === 0)
+      .filter((character, index) => index === 4)
       .map(
         (characterName) =>
           new NonPlayerCharacter(characterName, config.character.size, config.character.stepSize, config.character.baseVelocity, this.mode)
@@ -50,7 +56,9 @@ export class Game {
 
   private setMode(mode: GameMode) {
     this.mode = mode;
-    this.maze?.updateGameMode(mode);
+      this.nonPlayerCharacters.forEach((character) =>
+      character.updateGameMode(mode)
+    );
   }
 
   private updateGameMode(mode: GameMode) {
@@ -80,10 +88,9 @@ export class Game {
         break;
       case "playerCharacterEaten":
         this.livesCount -= 1;
-        this.maze?.reset();
+        this.resetCharacterPositions();
         if (this.livesCount === 0) {
           console.log("game over");
-          this.startNewRound(); // TODO: should not start a new round... should instead reset score, livesCount and round number
         }
         break;
       case "allPelletsEaten":
@@ -96,26 +103,96 @@ export class Game {
     }
   }
 
-  private initializeNewMaze() {
-    // TODO: be able to select the correct config object based on round number, mazes should vary in full game
-    this.maze = new Maze(
-      this.currentMaze,
-      this.roundTemplates.canvas,
-      this.mode,
-      (event: GameEvent) => this.onEvent(event),
-      this.playerCharacter,
-      this.nonPlayerCharacters
-    );
-    this.maze.initialize();
+  private isGameOver() {
+    return this.livesCount === 0;
   }
 
   private startNewRound() {
     this.roundNumber += 1;
-    this.initializeNewMaze();
+  }
+
+  private isRoundOver() {
+    return this.pellets.every((pellet) => pellet.hasBeenEaten)
+  }
+
+  private updateCollisionDetectorBarriers(newBarriers: Array<Barrier>) {
+    this.collisionDetector.updateBarriers(newBarriers);
+  }
+
+  private updateCharacterPositions() {
+    [this.playerCharacter, ...this.nonPlayerCharacters].forEach((character) => character.updatePosition());
+  }
+
+  private resetCharacterPositions() {
+    [this.playerCharacter, ...this.nonPlayerCharacters].forEach((character) =>
+      character.goToInitialPosition()
+    );
+  }
+
+  private checkForCharacterCollisions() {
+    this.nonPlayerCharacters.filter((nonPlayerCharacter) => !nonPlayerCharacter.isEaten).forEach((nonPlayerCharacter) => {
+      if (this.collisionDetector?.isPlayerCharacterCollidingWithNonPlayerCharacter(this.playerCharacter, nonPlayerCharacter)) {
+        if (this.mode === gameModeMap.flee) {
+          nonPlayerCharacter.onCollision('playerCharacterNonPlayerCharacter');
+          this.onEvent('nonPlayerCharacterEaten');
+        } else {
+          this.onEvent('playerCharacterEaten');
+        }
+      }
+    })
+  }
+
+  private updateNonPlayerCharacterTargetTile() {
+    this.nonPlayerCharacters.forEach((nonPlayerCharacter) => {
+      if (this.collisionDetector.areCentersColliding(nonPlayerCharacter.position, this.characterPositions.monster.reviveTile)) {
+        nonPlayerCharacter.onCollision(collisionEventMap.nonPlayerCharacterReviveTile);
+      }
+      if (this.collisionDetector.areCentersColliding(nonPlayerCharacter.position,
+          this.characterPositions.monster.exitTile
+        )
+      ) {
+        nonPlayerCharacter.onCollision(collisionEventMap.nonPlayerCharacterExitTile);
+      }
+    })
+  }
+
+  private checkForCharacterPelletCollisions() {
+    this.pellets
+      .filter(( pellet ) => !pellet.hasBeenEaten)
+      .forEach(( pellet ) => {
+        if (this.collisionDetector?.isPlayerTouchingPellet(this.playerCharacter.position, pellet.position)) {
+          pellet.hasBeenEaten = true;
+          if (pellet.isPowerPellet) this.onEvent('powerPelletEaten');
+          else this.onEvent('pelletEaten');
+        }
+    });
   }
 
   public initialize() {
     this.startNewRound();
-    useAnimationFrame(() => this.maze?.update());
+    this.playerCharacter.initialize(this.characterPositions.player.initial, (position: Position, size: number) =>
+      this.collisionDetector.isPositionAvailable(position, size)
+    );
+    this.nonPlayerCharacters.forEach((character) =>
+      character.initialize(
+        this.characterPositions.monster[character.name].initial,
+        (position: Position, size: number) => this.collisionDetector.isPositionAvailable(position, size),
+        () => this.playerCharacter.position,
+        this.characterPositions.monster[character.name].scatterTile,
+        this.characterPositions.monster.reviveTile,
+        this.characterPositions.monster.exitTile
+      )
+    );
+
+    this.resetCharacterPositions();
+
+    useAnimationFrame(() => {
+      if (this.isRoundOver()) console.log('round is over');
+      this.updateCharacterPositions();
+      this.updateNonPlayerCharacterTargetTile();
+      this.checkForCharacterCollisions();
+      this.checkForCharacterPelletCollisions();
+      this.renderer?.update(this.pellets.filter((pellet) => !pellet.hasBeenEaten), this.playerCharacter, this.nonPlayerCharacters);
+    });
   }
 }

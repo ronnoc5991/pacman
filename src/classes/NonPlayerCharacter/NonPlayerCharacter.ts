@@ -56,18 +56,18 @@ export class NonPlayerCharacter extends Character {
     }
   }
 
-  public setDirection(direction: Direction) {
-    this.direction = direction;
+  private updateDirection(direction: Direction) {
+    this.setDirection(direction);
     this.setBackwards();
   }
 
-  public onEventFunction(
-    eventType: "collision" | "modeChange" | "gameEvent",
-    event: "eventNameGoesHere"
-  ) {
-    // call the correct function with the eventName... those can be private functions
-    // this would act as a dispatch function
-  }
+  // public onEventFunction(
+  //   eventType: "collision" | "modeChange" | "gameEvent",
+  //   event: "eventNameGoesHere"
+  // ) {
+  //   // call the correct function with the eventName... those can be private functions
+  //   // this would act as a dispatch function
+  // }
 
   public onCollision(event: CollisionEvent) {
     switch (event) {
@@ -201,7 +201,7 @@ export class NonPlayerCharacter extends Character {
 
   public updatePosition() {
     const availableDirections = this.getAvailableDirections();
-    if (availableDirections.length > 0) this.setDirection(this.getNextDirection(availableDirections));
+    if (availableDirections.length > 0) this.updateDirection(this.getNextDirection(availableDirections));
     if (this.isPositionAvailable(this.getNextPosition(), this.size)) this.takeNextStep();
   }
 

@@ -5,19 +5,17 @@ import {
   mazeTemplateCellValueMap,
 } from "../types/MazeTemplate";
 import { getBarriers } from "./getBarriers";
-import { Barrier, BarrierVariant } from "../classes/Barrier/Barrier";
-import { Map, nonCharacterPlayerConfig } from "../types/Map";
+import { Barrier } from "../classes/Barrier/Barrier";
+import { Maze, nonCharacterPlayerConfig } from "../types/Maze";
 import { getTeleporters } from "./getTeleporters";
 import { getPellets } from "./getPellets";
 import { getInitialPlayerPosition } from "./getInitialPlayerPosition";
+import { RenderableBarrier } from "../types/RenderableBarrier";
 
-export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Map => {
-  // return barriers
-  // return character positions
-  // separate data into what needs to be drawn and what needs to be rendered?
+export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
   const barriers = {
     collidable: [] as Array<Barrier>,
-    drawable: [] as Array<{ position: Position; variant: BarrierVariant }>,
+    renderable: [] as Array<RenderableBarrier>,
   };
   const dimensions = {
     height: mazeTemplate.length,
@@ -26,35 +24,35 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Map => {
   let ghostExit: Position;
   let ghostPath: Position;
   const blinky: nonCharacterPlayerConfig = {
-    initialPosition: getInitialPlayerPosition(
+    initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.blinkyStart,
       mazeTemplate
     ),
-    scatterTargetTile: { x: dimensions.width + 1, y: -1 },
+    scatterTile: { x: dimensions.width + 1, y: -1 },
   };
   const inky: nonCharacterPlayerConfig = {
-    initialPosition: getInitialPlayerPosition(
+    initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.inkyStart,
       mazeTemplate
     ),
-    scatterTargetTile: {
+    scatterTile: {
       x: dimensions.width + 1,
       y: dimensions.height + 1,
     },
   };
   const pinky: nonCharacterPlayerConfig = {
-    initialPosition: getInitialPlayerPosition(
+    initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.pinkyStart,
       mazeTemplate
     ),
-    scatterTargetTile: { x: -1, y: -1 },
+    scatterTile: { x: -1, y: -1 },
   };
   const clyde: nonCharacterPlayerConfig = {
-    initialPosition: getInitialPlayerPosition(
+    initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.clydeStart,
       mazeTemplate
     ),
-    scatterTargetTile: { x: -1, y: dimensions.height + 1 },
+    scatterTile: { x: -1, y: dimensions.height + 1 },
   };
 
   mazeTemplate.map((row, rowIndex) => {
@@ -94,7 +92,9 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Map => {
               barriers.collidable.push(collidableBarrier)
             );
             if (newBarriers.drawable)
-              barriers.drawable.push(newBarriers.drawable);
+              barriers.renderable.push(newBarriers.drawable);
+            if (newBarriers.outline)
+              barriers.renderable.push(newBarriers.outline);
           }
 
           break;
@@ -136,18 +136,23 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Map => {
     dimensions,
     barriers,
     pellets: getPellets(mazeTemplate),
-    initialPlayerPosition: getInitialPlayerPosition(
-      mazeTemplateCellValueMap.playerCharacter,
-      mazeTemplate
-    ),
-    nonPlayerCharacterConfigs: {
-      exitTargetTile: blinky.initialPosition!,
-      reviveTargetTile: pinky.initialPosition!,
-      inky,
-      pinky,
-      blinky,
-      clyde,
-    },
     teleporters: getTeleporters(mazeTemplate),
+    characterPositions: {
+      player: {
+        initial: getInitialPlayerPosition(
+          mazeTemplateCellValueMap.playerCharacter,
+          mazeTemplate
+        ),
+      },
+      monster: {
+        exitTile: blinky.initial,
+        reviveTile: pinky.initial,
+        blinky,
+        clyde,
+        inky,
+        pinky
+
+      }
+    }
   };
 };

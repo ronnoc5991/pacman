@@ -1,6 +1,6 @@
 export const config = {
-  pelletSize: 0.3,
-  powerPelletSize: 0.6,
+  pelletSize: 0.4,
+  powerPelletSize: 0.7,
   character: {
     size: 1.8,
     stepSize: 0.1,

@@ -1,6 +1,5 @@
 import { mazeTemplate } from "./config/mazeTemplate";
 import { Game } from "./classes/Game/Game";
-import { GameConfig } from "./types/GameConfig";
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 
@@ -27,15 +26,12 @@ gridToggleButton?.addEventListener("click", (event) => {
   templateContainer.classList.toggle("is-hidden");
 });
 
-const rounds: GameConfig = { // refactor this to be an array of mapTemplates... we do not need the canvas below
-  mapTemplate: mazeTemplate, // might be able to expand this to an array of mapTemplates that represent the different levels of the game
-  canvas: document.getElementById("canvas") as HTMLCanvasElement, // remove this
-};
+const mazeTemplates = [mazeTemplate];
 
 // TODO: create multiple config objects for multiple games
 // ie: PacMan, Ms Pacman, etc
 // could have different mazes, different colors, different sprites etc
 
-const game = new Game(rounds);
+const game = new Game(mazeTemplates);
 
 game.initialize();
