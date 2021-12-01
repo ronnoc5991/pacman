@@ -16,16 +16,4 @@ export class CollidableObject {
       right: x + size / 2,
     };
   }
-
-  public getPosition() {
-    return this.position;
-  }
-
-  public getSize() {
-    return this.size;
-  }
-
-  public getHitbox() {
-    return this.hitbox;
-  }
 }

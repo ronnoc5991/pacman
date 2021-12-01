@@ -12,7 +12,7 @@ export class Character extends CollidableObject {
   initialPosition: Position | null = null;
   stepProgress: number;
   stepSize: number;
-  isPositionAvailable: (position: Position, size: number) => boolean;
+  isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean;
 
   constructor(
     position: Position,
@@ -20,7 +20,7 @@ export class Character extends CollidableObject {
     stepSize: number,
     baseVelocity: number,
     direction: Direction = "left",
-    isPositionAvailable: (position: Position, size: number) => boolean
+    isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean
   ) {
     super(position, size);
     this.baseVelocity = baseVelocity;
@@ -47,12 +47,14 @@ export class Character extends CollidableObject {
     this.initialPosition = initialPosition;
   }
 
-  protected setIsPositionAvailable(isPositionAvailable: (position: Position, size: number) => boolean) {
+  protected setIsPositionAvailable(
+    isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean
+  ) {
     this.isPositionAvailable = isPositionAvailable;
   }
 
   protected updateHitbox(position: Position = this.position) {
-    this.setHitbox(getHitboxForPosition(position, this.getSize()));
+    this.setHitbox(getHitboxForPosition(position, this.size));
   }
 
   public teleportTo(newPosition: Position) {
@@ -73,40 +75,44 @@ export class Character extends CollidableObject {
     return this.stepProgress >= this.stepSize;
   }
 
-  protected takeNextStep(
-    direction = this.direction,
-    position = this.position,
-    stepSize = 0.1
-  ) {
-    this.setStepProgress(this.stepProgress + this.baseVelocity * this.velocityMultiplier);
-    if (!this.canAdvance()) return;
-
-    const numberOfStepsToTake = Math.floor(this.stepProgress / this.stepSize);
-    this.setStepProgress(this.stepProgress - numberOfStepsToTake * this.stepSize);
-
-    const nextPosition = { ...position } as Position;
-    switch (direction) {
-      case "up":
-        nextPosition.y = addFloatingPointNumbers(position.y, -stepSize * numberOfStepsToTake);
-        break;
-      case "right":
-        nextPosition.x = addFloatingPointNumbers(position.x, stepSize * numberOfStepsToTake);
-        break;
-      case "down":
-        nextPosition.y = addFloatingPointNumbers(position.y, stepSize * numberOfStepsToTake);
-        break;
-      case "left":
-        nextPosition.x = addFloatingPointNumbers(position.x, -stepSize * numberOfStepsToTake);
-        break;
-      default:
-        //do nothing
-        break;
+  protected takeNextStep() {
+    if (
+      this.isPositionAvailable({
+        position: this.getNextPosition(),
+        hitbox: getHitboxForPosition(this.getNextPosition(), this.size),
+        size: this.size,
+      })
+    ) {
+      this.setStepProgress(
+        this.stepProgress + this.baseVelocity * this.velocityMultiplier
+      );
+      if (!this.canAdvance()) return;
     }
-    this.setPosition(nextPosition);
-    this.updateHitbox();
+
+    let numberOfStepsToTake = Math.floor(this.stepProgress / this.stepSize);
+    this.setStepProgress(
+      this.stepProgress - numberOfStepsToTake * this.stepSize
+    );
+
+    while (numberOfStepsToTake > 0) {
+      if (
+        !this.isPositionAvailable({
+          position: this.getNextPosition(),
+          hitbox: getHitboxForPosition(this.getNextPosition(), this.size),
+          size: this.size,
+        })
+      ) {
+        numberOfStepsToTake = 0;
+      } else {
+        this.setPosition(this.getNextPosition());
+        this.updateHitbox();
+        numberOfStepsToTake--;
+      }
+    }
   }
 
   protected getNextPosition(
+    // should this take into account the stepProgress that we have made?
     direction = this.direction,
     position = this.position,
     stepSize = this.stepSize

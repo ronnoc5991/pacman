@@ -3,6 +3,8 @@ import { Barrier } from "../classes/Barrier/Barrier";
 import { RenderableBarrier } from "./RenderableBarrier";
 import { Teleporter } from "../classes/Teleporter/Teleporter";
 import { Pellet } from "../classes/Pellet/Pellet";
+import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
+import { Cell } from "../classes/Cell/Cell";
 
 export type nonCharacterPlayerConfig = {
   initial: Position;
@@ -14,13 +16,13 @@ export type CharacterPositionConfig = {
     initial: Position;
   };
   monster: {
-    exitTile: Position;
-    reviveTile: Position;
+    exitCell: Cell;
+    reviveCell: Cell;
     inky: nonCharacterPlayerConfig;
     pinky: nonCharacterPlayerConfig;
     blinky: nonCharacterPlayerConfig;
     clyde: nonCharacterPlayerConfig;
-  }
+  };
 };
 
 export type Maze = {
@@ -34,17 +36,5 @@ export type Maze = {
   };
   pellets: Array<Pellet>;
   teleporters: Array<Teleporter>;
-  characterPositions: {
-    player: {
-      initial: Position;
-    };
-    monster: {
-      exitTile: Position;
-      reviveTile: Position;
-      inky: nonCharacterPlayerConfig;
-      pinky: nonCharacterPlayerConfig;
-      blinky: nonCharacterPlayerConfig;
-      clyde: nonCharacterPlayerConfig;
-    }
-  }
+  characterPositions: CharacterPositionConfig;
 };

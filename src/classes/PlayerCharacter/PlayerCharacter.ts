@@ -1,27 +1,51 @@
 import { Character } from "../Character/Character";
 import { Direction } from "../../types/Direction";
 import { Position } from "../../types/Position";
+import { getHitboxForPosition } from "../../utils/getHitboxForPosition";
+import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 export class PlayerCharacter extends Character {
   nextDirection: Direction;
 
   constructor(size: number, stepSize: number, baseVelocity: number) {
-    super({ x: 0, y: 0 }, size, stepSize, baseVelocity, 'left', (position: Position, size: number) => false);
+    super(
+      { x: 0, y: 0 },
+      size,
+      stepSize,
+      baseVelocity,
+      "left",
+      (characterAtNextPosition: CollidableObject) => false
+    );
     this.nextDirection = "left";
   }
 
   private isNextDirectionPossible() {
-    return this.isPositionAvailable(this.getNextPosition(this.nextDirection), this.getSize());
+    return this.isPositionAvailable({
+      position: this.getNextPosition(this.nextDirection),
+      hitbox: getHitboxForPosition(
+        this.getNextPosition(this.nextDirection),
+        this.size
+      ),
+      size: this.size,
+    });
   }
 
   public updatePosition() {
-    if (this.direction !== this.nextDirection && this.isNextDirectionPossible()) this.setDirection(this.nextDirection);
-    if (this.isPositionAvailable(this.getNextPosition(), this.getSize())) this.takeNextStep();
+    if (this.direction !== this.nextDirection && this.isNextDirectionPossible())
+      this.setDirection(this.nextDirection);
+    if (
+      this.isPositionAvailable({
+        position: this.getNextPosition(),
+        hitbox: getHitboxForPosition(this.getNextPosition(), this.size),
+        size: this.size,
+      })
+    )
+      this.takeNextStep();
   }
 
   public initialize(
     initialPosition: Position,
-    isPositionAvailable: (position: Position, size: number) => boolean
+    isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean
   ) {
     this.setInitialPosition(initialPosition);
     this.setIsPositionAvailable(isPositionAvailable);

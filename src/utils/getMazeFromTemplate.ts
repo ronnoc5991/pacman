@@ -11,6 +11,7 @@ import { getTeleporters } from "./getTeleporters";
 import { getPellets } from "./getPellets";
 import { getInitialPlayerPosition } from "./getInitialPlayerPosition";
 import { RenderableBarrier } from "../types/RenderableBarrier";
+import { Cell } from "../classes/Cell/Cell";
 
 export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
   const barriers = {
@@ -21,8 +22,6 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
     height: mazeTemplate.length,
     width: mazeTemplate[0].length,
   };
-  let ghostExit: Position;
-  let ghostPath: Position;
   const blinky: nonCharacterPlayerConfig = {
     initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.blinkyStart,
@@ -104,30 +103,6 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
           // and which points need to draw vertical lines
           // these should be added to the barriers after being calculated
           break;
-        case mazeTemplateCellValueMap.ghostExit:
-          if (!ghostExit) {
-            ghostExit = { x, y };
-          } else {
-            ghostExit = {
-              x: (ghostExit.x + x) / 2,
-              y: (ghostExit.y + y) / 2,
-            };
-          }
-          // and as a barrier, one way barrier
-          break;
-        case mazeTemplateCellValueMap.ghostPath:
-          if (!ghostPath) {
-            ghostPath = { x, y };
-          } else {
-            ghostPath = {
-              x: (ghostPath.x + x) / 2,
-              y: (ghostPath.y + y) / 2,
-            };
-          }
-          break;
-        default:
-          // do nothing
-          break;
       }
     });
   });
@@ -145,14 +120,13 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
         ),
       },
       monster: {
-        exitTile: blinky.initial,
-        reviveTile: pinky.initial,
+        exitCell: new Cell(blinky.initial, 1),
+        reviveCell: new Cell(pinky.initial, 1),
         blinky,
         clyde,
         inky,
-        pinky
-
-      }
-    }
+        pinky,
+      },
+    },
   };
 };

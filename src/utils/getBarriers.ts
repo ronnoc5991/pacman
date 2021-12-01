@@ -9,13 +9,10 @@ import { RenderableBarrier } from "../types/RenderableBarrier";
 
 const outlinedCellValues = [
   mazeTemplateCellValueMap.void,
-  null
+  null,
+  mazeTemplateCellValueMap.inkyStart,
+  mazeTemplateCellValueMap.clydeStart,
 ];
-
-// could attach another variant to the renderable barriers
-// oulined
-// inlined
-// 
 
 const isOutlinedCellValue = (value: TemplateCellValue | null) =>
   outlinedCellValues.includes(value);
@@ -287,10 +284,8 @@ function getDrawableBarrier(
   return null;
 }
 
-
-
 function getBarrierOutlines(
-    position: Position,
+  position: Position,
   {
     topMiddle,
     topRight,
@@ -300,10 +295,9 @@ function getBarrierOutlines(
     bottomLeft,
     middleLeft,
     topLeft,
-  }: AdjacentCellRequiresOutlineStatuses,
-  // { topMiddle, middleRight, bottomMiddle, middleLeft }: AdjacentMiddleCellValues
-): RenderableBarrier | null {
-
+  }: AdjacentCellRequiresOutlineStatuses
+): // { topMiddle, middleRight, bottomMiddle, middleLeft }: AdjacentMiddleCellValues
+RenderableBarrier | null {
   const isTopMiddleOutlined = isOutlinedCellValue(topMiddle);
   const isTopRightOutlined = isOutlinedCellValue(topRight);
   const isMiddleRightOutlined = isOutlinedCellValue(middleRight);
@@ -313,14 +307,56 @@ function getBarrierOutlines(
   const isMiddleLeftOutlined = isOutlinedCellValue(middleLeft);
   const isTopLeftOutlined = isOutlinedCellValue(topLeft);
 
-  if ((isTopMiddleOutlined && !isMiddleLeftOutlined && !isMiddleRightOutlined) || (isTopMiddleOutlined && isTopRightOutlined && isTopLeftOutlined && bottomMiddle === 't')) return { position, variant: 'top-outline'};
-  if ((isBottomMiddleOutlined && !isMiddleLeftOutlined && !isMiddleRightOutlined) || (isBottomMiddleOutlined && isBottomRightOutlined && isBottomLeftOutlined && topMiddle === 't')) return { position, variant: 'bottom-outline'};
-  if (isMiddleLeftOutlined && !isTopMiddleOutlined && !isBottomMiddleOutlined) return { position, variant: 'left-outline'};
-  if (isMiddleRightOutlined && !isTopMiddleOutlined && !isBottomMiddleOutlined) return { position, variant: 'right-outline' };
-  if (isTopMiddleOutlined && isMiddleLeftOutlined && !isMiddleRightOutlined && !isBottomMiddleOutlined) return { position, variant: 'top-left-outline' }
-  if (isTopMiddleOutlined && isMiddleRightOutlined && !isMiddleLeftOutlined && !isBottomMiddleOutlined) return { position, variant: 'top-right-outline' }
-  if (!isTopMiddleOutlined && !isMiddleRightOutlined && isMiddleLeftOutlined && isBottomMiddleOutlined) return { position, variant: 'bottom-left-outline' }
-  if (!isTopMiddleOutlined && isMiddleRightOutlined && !isMiddleLeftOutlined && isBottomMiddleOutlined) return { position, variant: 'bottom-right-outline' }
+  if (
+    (isTopMiddleOutlined && !isMiddleLeftOutlined && !isMiddleRightOutlined) ||
+    (isTopMiddleOutlined &&
+      isTopRightOutlined &&
+      isTopLeftOutlined &&
+      bottomMiddle === "t")
+  )
+    return { position, variant: "top-outline" };
+  if (
+    (isBottomMiddleOutlined &&
+      !isMiddleLeftOutlined &&
+      !isMiddleRightOutlined) ||
+    (isBottomMiddleOutlined &&
+      isBottomRightOutlined &&
+      isBottomLeftOutlined &&
+      topMiddle === "t")
+  )
+    return { position, variant: "bottom-outline" };
+  if (isMiddleLeftOutlined && !isTopMiddleOutlined && !isBottomMiddleOutlined)
+    return { position, variant: "left-outline" };
+  if (isMiddleRightOutlined && !isTopMiddleOutlined && !isBottomMiddleOutlined)
+    return { position, variant: "right-outline" };
+  if (
+    isTopMiddleOutlined &&
+    isMiddleLeftOutlined &&
+    !isMiddleRightOutlined &&
+    !isBottomMiddleOutlined
+  )
+    return { position, variant: "top-left-outline" };
+  if (
+    isTopMiddleOutlined &&
+    isMiddleRightOutlined &&
+    !isMiddleLeftOutlined &&
+    !isBottomMiddleOutlined
+  )
+    return { position, variant: "top-right-outline" };
+  if (
+    !isTopMiddleOutlined &&
+    !isMiddleRightOutlined &&
+    isMiddleLeftOutlined &&
+    isBottomMiddleOutlined
+  )
+    return { position, variant: "bottom-left-outline" };
+  if (
+    !isTopMiddleOutlined &&
+    isMiddleRightOutlined &&
+    !isMiddleLeftOutlined &&
+    isBottomMiddleOutlined
+  )
+    return { position, variant: "bottom-right-outline" };
   return null;
 }
 
@@ -338,9 +374,9 @@ export const getBarriers = (
   }: AdjacentCellValueMap,
   cellSize: number
 ): {
-    collidable: Array<Barrier>;
-    drawable: RenderableBarrier | null;
-    outline: RenderableBarrier | null;
+  collidable: Array<Barrier>;
+  drawable: RenderableBarrier | null;
+  outline: RenderableBarrier | null;
 } | null => {
   const quadrantSize = cellSize / 2;
   const topQuadrantY = y - quadrantSize / 2;
@@ -382,16 +418,16 @@ export const getBarriers = (
     bottomRightQuadrantDeterminingCellValues.every(isOutlinedCellValue);
   const isBottomLeftQuadrantOutlined =
     bottomLeftQuadrantDeterminingCellValues.every(isOutlinedCellValue);
-  
-  const isTopRowOutlined = isTopLeftQuadrantOutlined && isTopRightQuadrantOutlined;
+
+  const isTopRowOutlined =
+    isTopLeftQuadrantOutlined && isTopRightQuadrantOutlined;
   const isBottomRowOutlined =
     isBottomLeftQuadrantOutlined && isBottomRightQuadrantOutlined;
   const isLeftColumnOutlined =
     isTopLeftQuadrantOutlined && isBottomLeftQuadrantOutlined;
   const isRightColumnOutlined =
     isTopRightQuadrantOutlined && isBottomRightQuadrantOutlined;
-  
-  
+
   if (
     isTopLeftQuadrantBlocked &&
     isTopRightQuadrantBlocked &&
@@ -428,7 +464,7 @@ export const getBarriers = (
     isTopLeftQuadrantBlocked && isBottomLeftQuadrantBlocked;
   const isRightColumnBlocked =
     isTopRightQuadrantBlocked && isBottomRightQuadrantBlocked;
-  
+
   const drawableBarrier = getDrawableBarrier(
     { x, y },
     {
@@ -444,16 +480,19 @@ export const getBarriers = (
     { middleLeft, middleRight, bottomMiddle, topMiddle }
   );
 
-  const outline = getBarrierOutlines({ x, y }, {
-    topMiddle,
-    topRight,
-    middleRight,
-    bottomRight,
-    bottomMiddle,
-    bottomLeft,
-    middleLeft,
-    topLeft,
-  });
+  const outline = getBarrierOutlines(
+    { x, y },
+    {
+      topMiddle,
+      topRight,
+      middleRight,
+      bottomRight,
+      bottomMiddle,
+      bottomLeft,
+      middleLeft,
+      topLeft,
+    }
+  );
 
-  return { collidable: barriers, drawable: drawableBarrier, outline, };
+  return { collidable: barriers, drawable: drawableBarrier, outline };
 };

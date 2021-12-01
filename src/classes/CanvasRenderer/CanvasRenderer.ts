@@ -15,42 +15,76 @@ export class CanvasRenderer {
   };
   barriers: Array<RenderableBarrier>;
 
-  constructor({ width, height }: { width: number; height: number; }, barriers: Array<RenderableBarrier>) {
+  constructor(
+    { width, height }: { width: number; height: number },
+    barriers: Array<RenderableBarrier>
+  ) {
     this.cellSizeInPixels = 20;
     this.barriers = barriers;
     this.canvasHeight = height * this.cellSizeInPixels;
     this.canvasWidth = width * this.cellSizeInPixels;
-    const staticCanvas = document.createElement('canvas');
-    const dynamicCanvas = document.createElement('canvas');
+    const staticCanvas = document.createElement("canvas");
+    const dynamicCanvas = document.createElement("canvas");
     const canvases = [staticCanvas, dynamicCanvas];
     canvases.forEach((canvas) => {
-      canvas.style.position = 'absolute';
-      canvas.style.top = '50%';
-      canvas.style.left = '50%';
-      canvas.style.transform = 'translate(-50%, -50%)';
+      canvas.style.position = "absolute";
+      canvas.style.top = "50%";
+      canvas.style.left = "50%";
+      canvas.style.transform = "translate(-50%, -50%)";
       canvas.width = this.canvasWidth;
       canvas.height = this.canvasHeight;
     });
-      
+
     document.body.appendChild(staticCanvas);
     document.body.appendChild(dynamicCanvas);
 
     this.contexts = {
-      static: staticCanvas.getContext('2d') as CanvasRenderingContext2D,
-      dynamic: dynamicCanvas.getContext('2d') as CanvasRenderingContext2D,
+      static: staticCanvas.getContext("2d") as CanvasRenderingContext2D,
+      dynamic: dynamicCanvas.getContext("2d") as CanvasRenderingContext2D,
     };
-    this.barriers.forEach((barrier) => drawBarrier(barrier.position, barrier.variant, this.contexts.static, this.cellSizeInPixels))
+    this.barriers.forEach((barrier) =>
+      drawBarrier(
+        barrier.position,
+        barrier.variant,
+        this.contexts.static,
+        this.cellSizeInPixels
+      )
+    );
   }
 
   private clearCanvas(context: CanvasRenderingContext2D) {
     context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
   }
 
-  public update(pelletsToDraw: Array<Pellet>, playerCharacter: PlayerCharacter, nonPlayerCharacters: Array<NonPlayerCharacter>) {
+  public update(
+    pelletsToDraw: Array<Pellet>,
+    playerCharacter: PlayerCharacter,
+    nonPlayerCharacters: Array<NonPlayerCharacter>
+  ) {
     this.clearCanvas(this.contexts.dynamic);
-    pelletsToDraw.forEach((pellet) => drawCircle(this.contexts.dynamic, pellet.getPosition(), pellet.getSize(), this.cellSizeInPixels));
-    drawCircle(this.contexts.dynamic, playerCharacter.position, playerCharacter.getSize(), this.cellSizeInPixels);
-    nonPlayerCharacters.forEach((character) => drawCircle(this.contexts.dynamic, character.getPosition(), character.getSize(), this.cellSizeInPixels));
+    pelletsToDraw.forEach((pellet) =>
+      drawCircle(
+        this.contexts.dynamic,
+        pellet.position,
+        pellet.size,
+        this.cellSizeInPixels
+      )
+    );
+    drawCircle(
+      this.contexts.dynamic,
+      playerCharacter.position,
+      playerCharacter.size,
+      this.cellSizeInPixels
+    );
+    nonPlayerCharacters.forEach((character) =>
+      drawCircle(
+        this.contexts.dynamic,
+        character.position,
+        character.size,
+        this.cellSizeInPixels,
+        character.isEaten ? "#FF0000" : undefined
+      )
+    );
   }
 
   // maybe barriers should be redrawn if a certain game mode is active and the color of the barriers needs to change

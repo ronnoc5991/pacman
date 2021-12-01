@@ -4,6 +4,9 @@ import { directions, Direction } from "../../types/Direction";
 import { GameMode, gameModeMap } from "../../types/GameMode";
 import { CollisionEvent, GameEvent } from "../../types/GameEvent";
 import { NonPlayerCharacterName } from "../../types/NonPlayerCharacterNames";
+import { CollidableObject } from "../CollidableObject/CollidableObject";
+import { getHitboxForPosition } from "../../utils/getHitboxForPosition";
+import { Collision } from "../../types/Collision";
 
 export class NonPlayerCharacter extends Character {
   name: NonPlayerCharacterName;
@@ -16,6 +19,7 @@ export class NonPlayerCharacter extends Character {
   reviveTargetTile: Position | null = null;
   exitTargetTile: Position | null = null;
   isInCage: boolean;
+  isDormant: boolean;
 
   constructor(
     name: NonPlayerCharacterName,
@@ -24,12 +28,20 @@ export class NonPlayerCharacter extends Character {
     velocity: number,
     gameMode: GameMode // don't know if this should be included in constructor???  Think about it
   ) {
-    super({ x: 0, y: 0 }, size, stepSize, velocity, 'left', (position: Position, size: number) => false);
+    super(
+      { x: 0, y: 0 },
+      size,
+      stepSize,
+      velocity,
+      "left",
+      (chraracterAtNextPosition: CollidableObject) => false
+    );
     this.name = name;
     this.directions = directions;
     this.backwards = "right";
     this.gameMode = gameMode;
     this.isInCage = name !== "blinky";
+    this.isDormant = name !== "blinky";
   }
 
   private reverseDirection() {
@@ -149,7 +161,14 @@ export class NonPlayerCharacter extends Character {
     return directions.filter((direction) => {
       return (
         direction !== this.backwards &&
-        this.isPositionAvailable(this.getNextPosition(direction), this.getSize())
+        this.isPositionAvailable({
+          position: this.getNextPosition(direction),
+          hitbox: getHitboxForPosition(
+            this.getNextPosition(direction),
+            this.size
+          ),
+          size: this.size,
+        })
       );
     });
   }
@@ -160,7 +179,8 @@ export class NonPlayerCharacter extends Character {
     ];
   }
 
-  private getBestDirection( // can be simplified
+  private getBestDirection(
+    // can be simplified
     availableDirections: Array<Direction>,
     targetTile: Position
   ): Direction {
@@ -192,22 +212,32 @@ export class NonPlayerCharacter extends Character {
   }
 
   private getNextDirection(availableDirections: Array<Direction>) {
-    return (
-      this.gameMode === gameModeMap.flee && !this.isEaten
-        ? this.getRandomDirection(availableDirections)
-        : this.getBestDirection(availableDirections, this.getTargetTilePosition())
-    )
+    return this.gameMode === gameModeMap.flee && !this.isEaten
+      ? this.getRandomDirection(availableDirections)
+      : this.getBestDirection(
+          availableDirections,
+          this.getTargetTilePosition()
+        );
   }
 
   public updatePosition() {
+    if (this.isDormant) return;
     const availableDirections = this.getAvailableDirections();
-    if (availableDirections.length > 0) this.updateDirection(this.getNextDirection(availableDirections));
-    if (this.isPositionAvailable(this.getNextPosition(), this.size)) this.takeNextStep();
+    if (availableDirections.length > 0)
+      this.updateDirection(this.getNextDirection(availableDirections));
+    if (
+      this.isPositionAvailable({
+        position: this.getNextPosition(),
+        hitbox: getHitboxForPosition(this.getNextPosition(), this.size),
+        size: this.size,
+      })
+    )
+      this.takeNextStep();
   }
 
   public initialize(
     initialPosition: Position,
-    isPositionAvailable: (position: Position, size: number) => boolean,
+    isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean,
     getPlayerCharacterPosition: () => Position,
     defaultTargetTilePosition: Position,
     reviveTargetTile: Position,
