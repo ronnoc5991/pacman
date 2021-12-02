@@ -1,6 +1,6 @@
 import { useAnimationFrame } from "../../utils/useAnimationFrame";
 import { GameMode, gameModeMap } from "../../types/GameMode";
-import { collisionEventMap, GameEvent } from "../../types/GameEvent";
+import { GameEvent } from "../../types/GameEvent";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
@@ -185,9 +185,7 @@ export class Game {
           "center"
         )
       ) {
-        nonPlayerCharacter.onCollision(
-          collisionEventMap.nonPlayerCharacterReviveTile
-        );
+        nonPlayerCharacter.onCollision("nonPlayerCharacterReviveTile");
       }
       if (
         this.collisionDetector.areObjectsColliding(
@@ -196,9 +194,7 @@ export class Game {
           "center"
         )
       ) {
-        nonPlayerCharacter.onCollision(
-          collisionEventMap.nonPlayerCharacterExitTile
-        );
+        nonPlayerCharacter.onCollision("nonPlayerCharacterExitTile");
       }
     });
   }
