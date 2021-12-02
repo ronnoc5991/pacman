@@ -1,7 +1,7 @@
 import { Character } from "../Character/Character";
 import { Position } from "../../types/Position";
 import { directions, Direction } from "../../types/Direction";
-import { GameMode, gameModeMap } from "../../types/GameMode";
+import { GameMode } from "../../types/GameMode";
 import { CollisionEvent, GameEvent } from "../../types/GameEvent";
 import { NonPlayerCharacterName } from "../../types/NonPlayerCharacterNames";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
@@ -121,12 +121,10 @@ export class NonPlayerCharacter extends Character {
 
   public updateGameMode(newGameMode: GameMode) {
     if (
-      (this.gameMode === gameModeMap.pursue &&
-        (newGameMode === gameModeMap.scatter ||
-          newGameMode === gameModeMap.flee)) ||
-      (this.gameMode === gameModeMap.scatter &&
-        (newGameMode === gameModeMap.pursue ||
-          newGameMode === gameModeMap.flee))
+      (this.gameMode === "pursue" &&
+        (newGameMode === "scatter" || newGameMode === "flee")) ||
+      (this.gameMode === "scatter" &&
+        (newGameMode === "pursue" || newGameMode === "flee"))
     ) {
       this.reverseDirection();
     }
@@ -150,7 +148,7 @@ export class NonPlayerCharacter extends Character {
       return this.exitTargetTile;
     }
 
-    if (this.gameMode === gameModeMap.scatter) {
+    if (this.gameMode === "scatter") {
       return this.defaultTargetTilePosition;
     }
 
@@ -212,7 +210,7 @@ export class NonPlayerCharacter extends Character {
   }
 
   private getNextDirection(availableDirections: Array<Direction>) {
-    return this.gameMode === gameModeMap.flee && !this.isEaten
+    return this.gameMode === "flee" && !this.isEaten
       ? this.getRandomDirection(availableDirections)
       : this.getBestDirection(
           availableDirections,

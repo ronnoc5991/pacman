@@ -1,5 +1,5 @@
 import { useAnimationFrame } from "../../utils/useAnimationFrame";
-import { GameMode, gameModeMap } from "../../types/GameMode";
+import { GameMode } from "../../types/GameMode";
 import { GameEvent } from "../../types/GameEvent";
 import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
@@ -17,7 +17,7 @@ import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 export class Game {
   mazeTemplates: Array<MazeTemplate>;
-  defaultMode: GameMode = gameModeMap.pursue; // each round follows a pattern of mode changes... figure this out
+  defaultMode: GameMode = "pursue"; // each round follows a pattern of mode changes... figure this out
   mode: GameMode;
   score: number;
   roundNumber: number;
@@ -97,7 +97,7 @@ export class Game {
         break;
       case "powerPelletEaten":
         this.increaseScore(50);
-        this.updateGameMode(gameModeMap.flee);
+        this.updateGameMode("flee");
         break;
       case "nonPlayerCharacterEaten":
         this.increaseScore(100);
@@ -166,7 +166,7 @@ export class Game {
             "sameCell"
           )
         ) {
-          if (this.mode === gameModeMap.flee) {
+          if (this.mode === "flee") {
             nonPlayerCharacter.onCollision("playerCharacterNonPlayerCharacter");
             this.onEvent("nonPlayerCharacterEaten");
           } else {

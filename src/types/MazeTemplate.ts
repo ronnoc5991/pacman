@@ -1,21 +1,19 @@
-const templateCellValues = [
-  "c", // character
-  "b", // barrier
-  "p", // pellet
-  "pp", // power pellet
-  "bs", // blinky start
-  "cs", // clyde start
-  "ps", // pinky start
-  "is", // inky start
-  "gc", // ghost cage
-  "ge", // ghost exit
-  "gp", // ghost path
-  "e", // empty
-  "t", // teleporter
-  "v", // void
-] as const;
-
-export type TemplateCellValue = typeof templateCellValues[number];
+export type TemplateCellValue =
+  | "c" // character
+  | "b" // barrier
+  | "p" // pellet
+  | "pp" // power pellet
+  | "bs" // blinky start
+  | "cs" // clyde start
+  | "ps" // pinky start
+  | "is" // inky start
+  | "gc" // ghost cage
+  | "ge" // ghost exit
+  | "gp" // ghost path
+  | "e" // empty
+  | "t" // teleporter
+  | "tp" // tunnel path
+  | "v"; // void
 
 type MazeTemplateCellMeaning =
   | "playerCharacter"
@@ -31,6 +29,7 @@ type MazeTemplateCellMeaning =
   | "ghostPath"
   | "empty"
   | "teleporter"
+  | "tunnelPath"
   | "void";
 
 export const mazeTemplateCellValueMap: Record<
@@ -50,23 +49,21 @@ export const mazeTemplateCellValueMap: Record<
   ghostPath: "gp",
   empty: "e",
   teleporter: "t",
+  tunnelPath: "tp",
   void: "v",
 };
 
 export type MazeTemplate = Array<Array<TemplateCellValue>>;
 
-const adjacentCells = [
-  "topLeft",
-  "topMiddle",
-  "topRight",
-  "middleRight",
-  "bottomRight",
-  "bottomMiddle",
-  "bottomLeft",
-  "middleLeft",
-] as const;
-
-export type AdjacentCell = typeof adjacentCells[number];
+export type AdjacentCell =
+  | "topLeft"
+  | "topMiddle"
+  | "topRight"
+  | "middleRight"
+  | "bottomRight"
+  | "bottomMiddle"
+  | "bottomLeft"
+  | "middleLeft";
 
 export type AdjacentCellValueMap = Record<
   AdjacentCell,
