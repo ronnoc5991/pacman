@@ -1,10 +1,10 @@
 import { useAnimationFrame } from "../../utils/useAnimationFrame";
 import { GameMode } from "../../types/GameMode";
 import { GameEvent } from "../../types/GameEvent";
-import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
-import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
+import { Player } from "../Player/Player";
+import { Monster } from "../Monster/Monster";
 import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
-import { CharacterPositionConfig, Maze } from "../../types/Maze";
+import { CharacterPositionConfig } from "../../types/Maze";
 import { config } from "../../config/config";
 import { CanvasRenderer } from "../CanvasRenderer/CanvasRenderer";
 import { CollisionDetector } from "../CollisionDetector/CollisionDetector";
@@ -12,7 +12,7 @@ import { Barrier } from "../Barrier/Barrier";
 import { MazeTemplate } from "../../types/MazeTemplate";
 import { Pellet } from "../Pellet/Pellet";
 import { Teleporter } from "../Teleporter/Teleporter";
-import { MonsterConfig, MonsterName } from "../../config/monster";
+import { MonsterConfig } from "../../config/monster";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 export class Game {
@@ -26,8 +26,8 @@ export class Game {
   pellets: Array<Pellet>;
   teleporters: Array<Teleporter>;
   characterPositions: CharacterPositionConfig;
-  playerCharacter: PlayerCharacter;
-  nonPlayerCharacters: Array<NonPlayerCharacter>;
+  player: Player;
+  monsters: Array<Monster>;
   collisionDetector: CollisionDetector;
   renderer: CanvasRenderer;
   modeChangingTimeout: null | ReturnType<typeof setTimeout> = setTimeout(
@@ -51,16 +51,16 @@ export class Game {
     this.teleporters = teleporters;
     this.pellets = pellets;
     this.characterPositions = characterPositions;
-    this.playerCharacter = new PlayerCharacter(
+    this.player = new Player(
       config.character.size,
       config.character.stepSize,
       config.character.baseVelocity
     );
-    this.nonPlayerCharacters = Object.entries(monsterConfig)
+    this.monsters = Object.entries(monsterConfig)
       .filter((character, index) => index !== 4)
       .map(
         ([key, value]) =>
-          new NonPlayerCharacter(
+          new Monster(
             value.name,
             config.character.size,
             config.character.stepSize,
@@ -70,11 +70,14 @@ export class Game {
       );
   }
 
+  // when calling updatePosition on each character, the game should pass certain information
+  // it should check if the character is in a special cell, and limit its behavior accordingly
+  // it should also check if we are in a certain game mode, and limit behavior accordingly as well
+  // this may allow use to remove the game mode knowledge from the non player characters... we would have to update their target tiles from here
+
   private setMode(mode: GameMode) {
     this.mode = mode;
-    this.nonPlayerCharacters.forEach((character) =>
-      character.updateGameMode(mode)
-    );
+    this.monsters.forEach((monster) => monster.updateGameMode(mode));
   }
 
   private updateGameMode(mode: GameMode) {
@@ -99,16 +102,16 @@ export class Game {
         this.increaseScore(50);
         this.updateGameMode("flee");
         break;
-      case "nonPlayerCharacterEaten":
+      case "monsterEaten":
         this.increaseScore(100);
         break;
-      case "playerCharacterEaten":
+      case "playerEaten":
         this.livesCount -= 1;
         this.resetCharacterPositions();
         break;
       case "allPelletsEaten":
         console.log("round over");
-        this.startNewRound();
+        this.incrementRoundNumber();
         break;
       default:
         // do nothing
@@ -120,7 +123,7 @@ export class Game {
     return this.livesCount === 0;
   }
 
-  private startNewRound() {
+  private incrementRoundNumber() {
     this.roundNumber += 1;
   }
 
@@ -129,19 +132,21 @@ export class Game {
   }
 
   private updateCharacterPositions() {
-    [this.playerCharacter, ...this.nonPlayerCharacters].forEach((character) =>
-      character.updatePosition()
-    );
+    this.player.updatePosition();
+
+    this.monsters.forEach((monster) => {
+      monster.updatePosition();
+    });
   }
 
   private resetCharacterPositions() {
-    [this.playerCharacter, ...this.nonPlayerCharacters].forEach((character) =>
+    [this.player, ...this.monsters].forEach((character) =>
       character.goToInitialPosition()
     );
   }
 
   private checkForCollisionsWithTeleporters() {
-    [this.playerCharacter, ...this.nonPlayerCharacters].forEach((character) => {
+    [this.player, ...this.monsters].forEach((character) => {
       const collidingTeleporter = this.teleporters.find((teleporter) => {
         return this.collisionDetector.areObjectsColliding(
           teleporter,
@@ -156,45 +161,47 @@ export class Game {
   }
 
   private checkForCharacterCollisions() {
-    this.nonPlayerCharacters
-      .filter((nonPlayerCharacter) => !nonPlayerCharacter.isEaten)
-      .forEach((nonPlayerCharacter) => {
+    this.monsters
+      .filter((monster) => !monster.isEaten)
+      .forEach((monster) => {
         if (
           this.collisionDetector.areObjectsColliding(
-            this.playerCharacter,
-            nonPlayerCharacter,
+            this.player,
+            monster,
             "sameCell"
           )
         ) {
           if (this.mode === "flee") {
-            nonPlayerCharacter.onCollision("playerCharacterNonPlayerCharacter");
-            this.onEvent("nonPlayerCharacterEaten");
+            monster.onCollision("player-monster");
+            this.onEvent("monsterEaten");
           } else {
-            this.onEvent("playerCharacterEaten");
+            this.onEvent("playerEaten");
           }
         }
       });
   }
 
-  private updateNonPlayerCharacterTargetTile() {
-    this.nonPlayerCharacters.forEach((nonPlayerCharacter) => {
+  // refactor this function to actually pass each monster the location of their target tile
+  // here we could differentiate between the different monsters?  And pass them the correct target tile based on their name?
+  private updateMonsterTargetCells() {
+    this.monsters.forEach((monster) => {
       if (
         this.collisionDetector.areObjectsColliding(
-          nonPlayerCharacter,
+          monster,
           this.characterPositions.monster.reviveCell,
           "center"
         )
       ) {
-        nonPlayerCharacter.onCollision("nonPlayerCharacterReviveTile");
+        monster.onCollision("monster-reviveCell");
       }
       if (
         this.collisionDetector.areObjectsColliding(
-          nonPlayerCharacter,
+          monster,
           this.characterPositions.monster.exitCell,
           "center"
         )
       ) {
-        nonPlayerCharacter.onCollision("nonPlayerCharacterExitTile");
+        monster.onCollision("monster-exitCell");
       }
     });
   }
@@ -205,7 +212,7 @@ export class Game {
       .forEach((pellet) => {
         if (
           this.collisionDetector.areObjectsColliding(
-            this.playerCharacter,
+            this.player,
             pellet,
             "center"
           )
@@ -218,7 +225,6 @@ export class Game {
   }
 
   private isPositionAvailable(characterAtNextPosition: CollidableObject) {
-    // needs to be passed the 'future' character collidableObject
     return this.barriers.every((barrier) => {
       return !this.collisionDetector.areObjectsColliding(
         barrier,
@@ -229,19 +235,19 @@ export class Game {
   }
 
   public initialize() {
-    this.startNewRound();
-    this.playerCharacter.initialize(
+    this.incrementRoundNumber();
+    this.player.initialize(
       this.characterPositions.player.initial,
       (characterAtNextPosition: CollidableObject) =>
         this.isPositionAvailable(characterAtNextPosition)
     );
-    this.nonPlayerCharacters.forEach((character) =>
-      character.initialize(
-        this.characterPositions.monster[character.name].initial,
+    this.monsters.forEach((monster) =>
+      monster.initialize(
+        this.characterPositions.monster[monster.name].initial,
         (characterAtNextPosition: CollidableObject) =>
           this.isPositionAvailable(characterAtNextPosition),
-        () => this.playerCharacter.position,
-        this.characterPositions.monster[character.name].scatterTile,
+        () => this.player.position,
+        this.characterPositions.monster[monster.name].scatterTile,
         this.characterPositions.monster.reviveCell.position,
         this.characterPositions.monster.exitCell.position
       )
@@ -255,12 +261,12 @@ export class Game {
       this.updateCharacterPositions();
       this.checkForCharacterPelletCollisions();
       this.checkForCollisionsWithTeleporters();
-      this.updateNonPlayerCharacterTargetTile();
+      this.updateMonsterTargetCells();
       this.checkForCharacterCollisions();
       this.renderer?.update(
         this.pellets.filter((pellet) => !pellet.hasBeenEaten),
-        this.playerCharacter,
-        this.nonPlayerCharacters
+        this.player,
+        this.monsters
       );
     });
   }

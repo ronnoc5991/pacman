@@ -12,11 +12,11 @@ export type TemplateCellValue =
   | "gp" // ghost path
   | "e" // empty
   | "t" // teleporter
-  | "tp" // tunnel path
+  | "sz" // slow zone
   | "v"; // void
 
 type MazeTemplateCellMeaning =
-  | "playerCharacter"
+  | "player"
   | "barrier"
   | "pellet"
   | "powerPellet"
@@ -29,14 +29,14 @@ type MazeTemplateCellMeaning =
   | "ghostPath"
   | "empty"
   | "teleporter"
-  | "tunnelPath"
+  | "slowZone"
   | "void";
 
 export const mazeTemplateCellValueMap: Record<
   MazeTemplateCellMeaning,
   TemplateCellValue
 > = {
-  playerCharacter: "c",
+  player: "c",
   barrier: "b",
   pellet: "p",
   powerPellet: "pp",
@@ -49,7 +49,7 @@ export const mazeTemplateCellValueMap: Record<
   ghostPath: "gp",
   empty: "e",
   teleporter: "t",
-  tunnelPath: "tp",
+  slowZone: "sz",
   void: "v",
 };
 

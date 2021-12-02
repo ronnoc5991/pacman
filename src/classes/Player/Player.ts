@@ -4,7 +4,7 @@ import { Position } from "../../types/Position";
 import { getHitboxForPosition } from "../../utils/getHitboxForPosition";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 
-export class PlayerCharacter extends Character {
+export class Player extends Character {
   nextDirection: Direction;
 
   constructor(size: number, stepSize: number, baseVelocity: number) {

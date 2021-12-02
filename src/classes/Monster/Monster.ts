@@ -3,16 +3,15 @@ import { Position } from "../../types/Position";
 import { directions, Direction } from "../../types/Direction";
 import { GameMode } from "../../types/GameMode";
 import { CollisionEvent, GameEvent } from "../../types/GameEvent";
-import { NonPlayerCharacterName } from "../../types/NonPlayerCharacterNames";
+import { MonsterName } from "../../types/MonsterNames";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 import { getHitboxForPosition } from "../../utils/getHitboxForPosition";
-import { Collision } from "../../types/Collision";
 
-export class NonPlayerCharacter extends Character {
-  name: NonPlayerCharacterName;
+export class Monster extends Character {
+  name: MonsterName;
   directions: ReadonlyArray<Direction>;
   backwards: Direction;
-  getPlayerCharacterPosition: (() => Position) | null = null;
+  getPlayerPosition: (() => Position) | null = null;
   gameMode: GameMode;
   defaultTargetTilePosition: Position | null = null;
   isEaten: boolean = false;
@@ -22,7 +21,7 @@ export class NonPlayerCharacter extends Character {
   isDormant: boolean;
 
   constructor(
-    name: NonPlayerCharacterName,
+    name: MonsterName,
     size: number,
     stepSize: number,
     velocity: number,
@@ -83,17 +82,17 @@ export class NonPlayerCharacter extends Character {
 
   public onCollision(event: CollisionEvent) {
     switch (event) {
-      case "playerCharacterNonPlayerCharacter":
+      case "player-monster":
         // this does not necessarily mean that we are eaten
         this.isEaten = true;
         console.log("eaten");
         break;
-      case "nonPlayerCharacterReviveTile":
+      case "monster-reviveCell":
         this.isEaten = false;
         this.isInCage = true;
         this.reverseDirection();
         break;
-      case "nonPlayerCharacterExitTile":
+      case "monster-exitCell":
         this.isInCage = false;
         break;
     }
@@ -101,18 +100,18 @@ export class NonPlayerCharacter extends Character {
 
   public onEvent(event: GameEvent) {
     switch (event) {
-      case "nonPlayerCharacterEaten":
+      case "monsterEaten":
         this.isEaten = true;
         console.log("eaten");
         break;
-      case "nonPlayerCharacterRevived":
+      case "monsterRevived":
         this.isEaten = false;
         this.isInCage = true;
         this.reverseDirection();
         console.log("revived");
         console.log("in cage");
         break;
-      case "nonPlayerCharacterExit":
+      case "monsterExited":
         this.isInCage = false;
         console.log("out of cage");
         break;
@@ -133,7 +132,7 @@ export class NonPlayerCharacter extends Character {
 
   private getTargetTilePosition() {
     if (
-      this.getPlayerCharacterPosition === null ||
+      this.getPlayerPosition === null ||
       !this.reviveTargetTile ||
       !this.defaultTargetTilePosition ||
       !this.exitTargetTile
@@ -152,7 +151,7 @@ export class NonPlayerCharacter extends Character {
       return this.defaultTargetTilePosition;
     }
 
-    return this.getPlayerCharacterPosition();
+    return this.getPlayerPosition();
   }
 
   private getAvailableDirections() {
@@ -236,14 +235,14 @@ export class NonPlayerCharacter extends Character {
   public initialize(
     initialPosition: Position,
     isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean,
-    getPlayerCharacterPosition: () => Position,
+    getPlayerPosition: () => Position,
     defaultTargetTilePosition: Position,
     reviveTargetTile: Position,
     exitTargetTile: Position
   ) {
     this.setInitialPosition(initialPosition);
     this.isPositionAvailable = isPositionAvailable;
-    this.getPlayerCharacterPosition = getPlayerCharacterPosition;
+    this.getPlayerPosition = getPlayerPosition;
     this.defaultTargetTilePosition = defaultTargetTilePosition;
     this.reviveTargetTile = reviveTargetTile;
     this.exitTargetTile = exitTargetTile;

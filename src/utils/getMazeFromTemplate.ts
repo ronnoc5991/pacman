@@ -1,4 +1,3 @@
-import { Position } from "../types/Position";
 import {
   AdjacentCellValueMap,
   MazeTemplate,
@@ -6,12 +5,13 @@ import {
 } from "../types/MazeTemplate";
 import { getBarriers } from "./getBarriers";
 import { Barrier } from "../classes/Barrier/Barrier";
-import { Maze, nonCharacterPlayerConfig } from "../types/Maze";
+import { Maze, monsterConfig } from "../types/Maze";
 import { getTeleporters } from "./getTeleporters";
 import { getPellets } from "./getPellets";
 import { getInitialPlayerPosition } from "./getInitialPlayerPosition";
 import { RenderableBarrier } from "../types/RenderableBarrier";
 import { Cell } from "../classes/Cell/Cell";
+import { getSlowZoneCells } from "./getSlowZoneCells";
 
 export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
   const barriers = {
@@ -22,14 +22,14 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
     height: mazeTemplate.length,
     width: mazeTemplate[0].length,
   };
-  const blinky: nonCharacterPlayerConfig = {
+  const blinky: monsterConfig = {
     initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.blinkyStart,
       mazeTemplate
     ),
     scatterTile: { x: dimensions.width + 1, y: -1 },
   };
-  const inky: nonCharacterPlayerConfig = {
+  const inky: monsterConfig = {
     initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.inkyStart,
       mazeTemplate
@@ -39,20 +39,22 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
       y: dimensions.height + 1,
     },
   };
-  const pinky: nonCharacterPlayerConfig = {
+  const pinky: monsterConfig = {
     initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.pinkyStart,
       mazeTemplate
     ),
     scatterTile: { x: -1, y: -1 },
   };
-  const clyde: nonCharacterPlayerConfig = {
+  const clyde: monsterConfig = {
     initial: getInitialPlayerPosition(
       mazeTemplateCellValueMap.clydeStart,
       mazeTemplate
     ),
     scatterTile: { x: -1, y: dimensions.height + 1 },
   };
+
+  const slowZoneCells = getSlowZoneCells(mazeTemplate);
 
   mazeTemplate.map((row, rowIndex) => {
     row.map((cell, columnIndex) => {
@@ -112,16 +114,17 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
     barriers,
     pellets: getPellets(mazeTemplate),
     teleporters: getTeleporters(mazeTemplate),
+    slowZoneCells,
     characterPositions: {
       player: {
         initial: getInitialPlayerPosition(
-          mazeTemplateCellValueMap.playerCharacter,
+          mazeTemplateCellValueMap.player,
           mazeTemplate
         ),
       },
       monster: {
-        exitCell: new Cell(blinky.initial, 1),
-        reviveCell: new Cell(pinky.initial, 1),
+        exitCell: new Cell(blinky.initial, 1, "monsterExit"),
+        reviveCell: new Cell(pinky.initial, 1, "monsterRevive"),
         blinky,
         clyde,
         inky,

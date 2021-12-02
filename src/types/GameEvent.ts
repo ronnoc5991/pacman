@@ -1,15 +1,15 @@
 export type GameEvent =
   | "pelletEaten"
   | "powerPelletEaten"
-  | "playerCharacterEaten"
-  | "nonPlayerCharacterEaten"
+  | "playerEaten"
+  | "monsterEaten"
   | "allPelletsEaten"
-  | "nonPlayerCharacterRevived"
-  | "nonPlayerCharacterExit";
+  | "monsterRevived"
+  | "monsterExited";
 
 export type CollisionEvent =
-  | "playerCharacterPellet"
-  | "playerCharacterPowerPellet"
-  | "playerCharacterNonPlayerCharacter"
-  | "nonPlayerCharacterReviveTile"
-  | "nonPlayerCharacterExitTile";
+  | "player-pellet"
+  | "player-powerPellet"
+  | "player-monster"
+  | "monster-reviveCell"
+  | "monster-exitCell";

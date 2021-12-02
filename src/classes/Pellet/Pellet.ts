@@ -2,7 +2,6 @@ import { Position } from "../../types/Position";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 export class Pellet extends CollidableObject {
-  size: number;
   hasBeenEaten: boolean;
   isPowerPellet: boolean;
 
@@ -12,7 +11,6 @@ export class Pellet extends CollidableObject {
     isPowerPellet: boolean = false
   ) {
     super(position, size);
-    this.size = size;
     this.hasBeenEaten = false;
     this.isPowerPellet = isPowerPellet;
   }

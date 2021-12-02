@@ -1,9 +1,9 @@
 import { RenderableBarrier } from "../../types/RenderableBarrier";
 import { drawBarrier } from "../../utils/drawBarrier";
 import { drawCircle } from "../../utils/drawCircle";
-import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
+import { Monster } from "../Monster/Monster";
 import { Pellet } from "../Pellet/Pellet";
-import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
+import { Player } from "../Player/Player";
 
 export class CanvasRenderer {
   cellSizeInPixels: number;
@@ -58,8 +58,8 @@ export class CanvasRenderer {
 
   public update(
     pelletsToDraw: Array<Pellet>,
-    playerCharacter: PlayerCharacter,
-    nonPlayerCharacters: Array<NonPlayerCharacter>
+    player: Player,
+    monsters: Array<Monster>
   ) {
     this.clearCanvas(this.contexts.dynamic);
     pelletsToDraw.forEach((pellet) =>
@@ -72,17 +72,17 @@ export class CanvasRenderer {
     );
     drawCircle(
       this.contexts.dynamic,
-      playerCharacter.position,
-      playerCharacter.size,
+      player.position,
+      player.size,
       this.cellSizeInPixels
     );
-    nonPlayerCharacters.forEach((character) =>
+    monsters.forEach((monster) =>
       drawCircle(
         this.contexts.dynamic,
-        character.position,
-        character.size,
+        monster.position,
+        monster.size,
         this.cellSizeInPixels,
-        character.isEaten ? "#FF0000" : undefined
+        monster.isEaten ? "#FF0000" : undefined
       )
     );
   }
