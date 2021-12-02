@@ -1,5 +1,5 @@
 import { CollidableObject } from "../CollidableObject/CollidableObject";
-import { Collision, collisionMap } from "../../types/Collision";
+import { Collision } from "../../types/Collision";
 
 export class CollisionDetector {
   private areCentersColliding(
@@ -45,11 +45,11 @@ export class CollisionDetector {
     objectTwo: CollidableObject,
     collisionType: Collision
   ) {
-    if (collisionType === collisionMap.center)
+    if (collisionType === "center")
       return this.areCentersColliding(objectOne, objectTwo);
-    if (collisionType === collisionMap.edge)
+    if (collisionType === "edge")
       return this.areEdgesColliding(objectOne, objectTwo);
-    if (collisionType === collisionMap.sameCell)
+    if (collisionType === "sameCell")
       return this.areOccupyingSameCell(objectOne, objectTwo);
   }
 }

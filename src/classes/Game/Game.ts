@@ -5,17 +5,14 @@ import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
 import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
 import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
 import { CharacterPositionConfig, Maze } from "../../types/Maze";
-import { nonPlayerCharacterNames } from "../../types/NonPlayerCharacterNames";
 import { config } from "../../config/config";
 import { CanvasRenderer } from "../CanvasRenderer/CanvasRenderer";
 import { CollisionDetector } from "../CollisionDetector/CollisionDetector";
-import { Position } from "../../types/Position";
 import { Barrier } from "../Barrier/Barrier";
 import { MazeTemplate } from "../../types/MazeTemplate";
 import { Pellet } from "../Pellet/Pellet";
 import { Teleporter } from "../Teleporter/Teleporter";
 import { MonsterConfig, MonsterName } from "../../config/monster";
-import { collisionMap } from "../../types/Collision";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 
 export class Game {
@@ -149,7 +146,7 @@ export class Game {
         return this.collisionDetector.areObjectsColliding(
           teleporter,
           character,
-          collisionMap.center
+          "center"
         );
       });
       if (collidingTeleporter) {
@@ -166,7 +163,7 @@ export class Game {
           this.collisionDetector.areObjectsColliding(
             this.playerCharacter,
             nonPlayerCharacter,
-            collisionMap.sameCell
+            "sameCell"
           )
         ) {
           if (this.mode === gameModeMap.flee) {
@@ -185,7 +182,7 @@ export class Game {
         this.collisionDetector.areObjectsColliding(
           nonPlayerCharacter,
           this.characterPositions.monster.reviveCell,
-          collisionMap.center
+          "center"
         )
       ) {
         nonPlayerCharacter.onCollision(
@@ -196,7 +193,7 @@ export class Game {
         this.collisionDetector.areObjectsColliding(
           nonPlayerCharacter,
           this.characterPositions.monster.exitCell,
-          collisionMap.center
+          "center"
         )
       ) {
         nonPlayerCharacter.onCollision(
@@ -214,7 +211,7 @@ export class Game {
           this.collisionDetector.areObjectsColliding(
             this.playerCharacter,
             pellet,
-            collisionMap.center
+            "center"
           )
         ) {
           pellet.hasBeenEaten = true;
@@ -230,7 +227,7 @@ export class Game {
       return !this.collisionDetector.areObjectsColliding(
         barrier,
         characterAtNextPosition,
-        collisionMap.edge
+        "edge"
       );
     });
   }
