@@ -5,36 +5,47 @@ import { Teleporter } from "../classes/Teleporter/Teleporter";
 import { Pellet } from "../classes/Pellet/Pellet";
 import { Cell } from "../classes/Cell/Cell";
 
-export type monsterConfig = {
-  initial: Position;
-  scatterTile: Position;
+export type InitialPositionConfig = {
+  player: Position;
+  monsters: {
+    blinky: Position;
+    clyde: Position;
+    inky: Position;
+    pinky: Position;
+  };
 };
 
-export type CharacterPositionConfig = {
-  player: {
-    initial: Position;
-  };
-  monster: {
-    exitCell: Cell;
-    reviveCell: Cell;
-    inky: monsterConfig;
-    pinky: monsterConfig;
-    blinky: monsterConfig;
-    clyde: monsterConfig;
+export type MonsterTarget = "exit" | "revive" | "scatter" | "player";
+
+export type MonsterTargetPositions = {
+  exit: Position;
+  revive: Position;
+  scatter: Position;
+};
+
+export type MonsterTargetsConfig = {
+  exit: Cell;
+  revive: Cell;
+  scatter: {
+    inky: Position;
+    blinky: Position;
+    pinky: Position;
+    clyde: Position;
   };
 };
 
 export type Maze = {
-  dimensions: {
-    width: number;
-    height: number;
-  };
-  slowZoneCells: Array<Cell>;
   barriers: {
     collidable: Array<Barrier>;
     renderable: Array<RenderableBarrier>;
   };
+  dimensions: {
+    width: number;
+    height: number;
+  };
   pellets: Array<Pellet>;
+  slowZoneCells: Array<Cell>;
   teleporters: Array<Teleporter>;
-  characterPositions: CharacterPositionConfig;
+  initialCharacterPositions: InitialPositionConfig;
+  monsterTargets: MonsterTargetsConfig;
 };

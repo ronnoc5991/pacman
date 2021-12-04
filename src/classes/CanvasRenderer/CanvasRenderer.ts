@@ -82,7 +82,7 @@ export class CanvasRenderer {
         monster.position,
         monster.size,
         this.cellSizeInPixels,
-        monster.isEaten ? "#FF0000" : undefined
+        monster.isAlive ? undefined : "#FF0000"
       )
     );
   }

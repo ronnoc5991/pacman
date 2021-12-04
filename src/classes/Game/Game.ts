@@ -4,8 +4,15 @@ import { GameEvent } from "../../types/GameEvent";
 import { Player } from "../Player/Player";
 import { Monster } from "../Monster/Monster";
 import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
-import { CharacterPositionConfig } from "../../types/Maze";
-import { config } from "../../config/config";
+import { InitialPositionConfig, MonsterTargetsConfig } from "../../types/Maze";
+import {
+  DefiniteModeTiming,
+  GameConfig,
+  IndefiniteModeTiming,
+  modeTimingConfig,
+  RoundGroup,
+  RoundModeTimings,
+} from "../../config/config";
 import { CanvasRenderer } from "../CanvasRenderer/CanvasRenderer";
 import { CollisionDetector } from "../CollisionDetector/CollisionDetector";
 import { Barrier } from "../Barrier/Barrier";
@@ -14,50 +21,62 @@ import { Pellet } from "../Pellet/Pellet";
 import { Teleporter } from "../Teleporter/Teleporter";
 import { MonsterConfig } from "../../config/monster";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
+import { useTimeout } from "../../utils/useTimeout";
 
 export class Game {
   mazeTemplates: Array<MazeTemplate>;
-  defaultMode: GameMode = "pursue"; // each round follows a pattern of mode changes... figure this out
-  mode: GameMode;
+  modeTimings: Record<RoundGroup, RoundModeTimings>;
+  roundModeTimings: RoundModeTimings | null = null;
+  roundStage: number = 0;
+  currentStageTiming: DefiniteModeTiming | IndefiniteModeTiming | null = null;
+  scatterAndChaseTimer: { pause: () => void; resume: () => void } | null = null;
+  fleeTimeout: null | ReturnType<typeof setTimeout> = setTimeout(() => {});
+  mode: GameMode | null = null;
   score: number;
   roundNumber: number;
   livesCount: number;
   barriers: Array<Barrier>;
   pellets: Array<Pellet>;
   teleporters: Array<Teleporter>;
-  characterPositions: CharacterPositionConfig;
+  initialCharacterPositions: InitialPositionConfig;
+  monsterTargets: MonsterTargetsConfig;
   player: Player;
   monsters: Array<Monster>;
   collisionDetector: CollisionDetector;
   renderer: CanvasRenderer;
-  modeChangingTimeout: null | ReturnType<typeof setTimeout> = setTimeout(
-    () => {}
-  );
 
   constructor(
+    config: GameConfig,
     mazeTemplates: Array<MazeTemplate>,
     monsterConfig: MonsterConfig
   ) {
+    this.modeTimings = config.modeTimings;
     this.mazeTemplates = mazeTemplates;
-    this.mode = this.defaultMode;
     this.score = 0;
-    this.roundNumber = 0;
+    this.roundNumber = 1;
     this.livesCount = 3;
-    const { barriers, characterPositions, dimensions, pellets, teleporters } =
-      getMazeFromTemplate(mazeTemplates[this.roundNumber]);
+    const {
+      barriers,
+      initialCharacterPositions,
+      dimensions,
+      pellets,
+      teleporters,
+      monsterTargets,
+    } = getMazeFromTemplate(mazeTemplates[this.roundNumber - 1]);
+    this.monsterTargets = monsterTargets;
     this.barriers = barriers.collidable;
     this.renderer = new CanvasRenderer(dimensions, barriers.renderable);
     this.collisionDetector = new CollisionDetector();
     this.teleporters = teleporters;
     this.pellets = pellets;
-    this.characterPositions = characterPositions;
+    this.initialCharacterPositions = initialCharacterPositions;
     this.player = new Player(
       config.character.size,
       config.character.stepSize,
       config.character.baseVelocity
     );
     this.monsters = Object.entries(monsterConfig)
-      .filter((character, index) => index !== 4)
+      .filter((character, index) => index === 0)
       .map(
         ([key, value]) =>
           new Monster(
@@ -65,28 +84,82 @@ export class Game {
             config.character.size,
             config.character.stepSize,
             config.character.baseVelocity,
-            this.mode
+            {
+              exit: monsterTargets.exit.position,
+              revive: monsterTargets.revive.position,
+              scatter: monsterTargets.scatter[value.name],
+            },
+            this.mode || "pursue"
           )
       );
   }
 
-  // when calling updatePosition on each character, the game should pass certain information
-  // it should check if the character is in a special cell, and limit its behavior accordingly
-  // it should also check if we are in a certain game mode, and limit behavior accordingly as well
-  // this may allow use to remove the game mode knowledge from the non player characters... we would have to update their target tiles from here
+  // TODO: Create some sort of getRoundConfig function that gets the following:
+  // the mazeTemplate and all state derived from that
+  // the scatterAndChase timings
+  // the timings for the flee modes
 
-  private setMode(mode: GameMode) {
-    this.mode = mode;
-    this.monsters.forEach((monster) => monster.updateGameMode(mode));
+  // TODO: Pass the monsters information about what they can and cannot do in their updatePosition function?
+  // For example: Check if the monster is in a noUp cell, and pass it that boolean
+  // Check if the monster is in a slowZone and pass it its velocity multiplier
+
+  // TODO: Give each round a different border color?  This way we know that they are different rounds?
+
+  private setMode(newMode: GameMode) {
+    this.mode = newMode;
   }
 
-  private updateGameMode(mode: GameMode) {
-    this.setMode(mode);
-    if (this.modeChangingTimeout) clearTimeout(this.modeChangingTimeout);
-    this.modeChangingTimeout = setTimeout(
-      () => this.setMode(this.defaultMode),
-      5000 // TODO: Replace this duration with some sort of time table based on level number and score and new game mode
-    );
+  private getModeTimingsForRound(roundNumber: number): RoundModeTimings {
+    if (roundNumber === 1) return modeTimingConfig.roundOne;
+    if (roundNumber >= 2 && roundNumber <= 4)
+      return modeTimingConfig.roundsTwoThroughFour;
+    return modeTimingConfig.roundsFiveAndUp;
+  }
+
+  private setModeTimingsForRound(newModeTimings: RoundModeTimings) {
+    this.roundModeTimings = newModeTimings;
+  }
+
+  private updateModeTimingsForRound() {
+    this.setModeTimingsForRound(this.getModeTimingsForRound(this.roundNumber));
+  }
+
+  private incrementRoundStage() {
+    if (this.roundModeTimings && this.roundModeTimings[this.roundStage + 1])
+      this.roundStage++;
+  }
+
+  private updateCurrentStage() {
+    if (this.roundModeTimings)
+      this.currentStageTiming = this.roundModeTimings[this.roundStage];
+  }
+
+  private updateMode(newMode: GameMode) {
+    this.setMode(newMode);
+    this.monsters.forEach((monster) => monster.onModeChange(newMode));
+  }
+
+  private startNextRoundStage() {
+    this.updateCurrentStage();
+    if (this.currentStageTiming) this.updateMode(this.currentStageTiming.mode);
+    console.log(this.mode);
+    if (this.currentStageTiming && "duration" in this.currentStageTiming) {
+      this.scatterAndChaseTimer = useTimeout(() => {
+        this.incrementRoundStage();
+        this.startNextRoundStage();
+      }, this.currentStageTiming.duration * 1000);
+    }
+  }
+
+  private startFleeTimeout() {
+    if (this.scatterAndChaseTimer) this.scatterAndChaseTimer.pause();
+    if (this.fleeTimeout) clearTimeout(this.fleeTimeout);
+    this.updateMode("flee");
+    this.fleeTimeout = setTimeout(() => {
+      if (this.scatterAndChaseTimer) this.scatterAndChaseTimer.resume();
+      if (this.currentStageTiming)
+        this.updateMode(this.currentStageTiming.mode);
+    }, 5000);
   }
 
   private increaseScore(scoreIncrease: number) {
@@ -100,7 +173,7 @@ export class Game {
         break;
       case "powerPelletEaten":
         this.increaseScore(50);
-        this.updateGameMode("flee");
+        this.startFleeTimeout();
         break;
       case "monsterEaten":
         this.increaseScore(100);
@@ -140,9 +213,12 @@ export class Game {
   }
 
   private resetCharacterPositions() {
-    [this.player, ...this.monsters].forEach((character) =>
-      character.goToInitialPosition()
+    this.player.setPositionAndUpdateHitbox(
+      this.initialCharacterPositions.player
     );
+    this.monsters.forEach((monster) => {
+      monster.reset(this.initialCharacterPositions.monsters[monster.name]);
+    });
   }
 
   private checkForCollisionsWithTeleporters() {
@@ -155,14 +231,14 @@ export class Game {
         );
       });
       if (collidingTeleporter) {
-        character.teleportTo(collidingTeleporter.teleportTo);
+        character.setPositionAndUpdateHitbox(collidingTeleporter.teleportTo);
       }
     });
   }
 
   private checkForCharacterCollisions() {
     this.monsters
-      .filter((monster) => !monster.isEaten)
+      .filter((monster) => monster.isAlive)
       .forEach((monster) => {
         if (
           this.collisionDetector.areObjectsColliding(
@@ -172,7 +248,7 @@ export class Game {
           )
         ) {
           if (this.mode === "flee") {
-            monster.onCollision("player-monster");
+            this.player.killMonster(monster);
             this.onEvent("monsterEaten");
           } else {
             this.onEvent("playerEaten");
@@ -181,27 +257,25 @@ export class Game {
       });
   }
 
-  // refactor this function to actually pass each monster the location of their target tile
-  // here we could differentiate between the different monsters?  And pass them the correct target tile based on their name?
-  private updateMonsterTargetCells() {
+  private checkForMonsterTargetCollisions() {
     this.monsters.forEach((monster) => {
       if (
         this.collisionDetector.areObjectsColliding(
           monster,
-          this.characterPositions.monster.reviveCell,
+          this.monsterTargets.revive,
           "center"
         )
       ) {
-        monster.onCollision("monster-reviveCell");
+        monster.onTargetCollision("revive");
       }
       if (
         this.collisionDetector.areObjectsColliding(
           monster,
-          this.characterPositions.monster.exitCell,
+          this.monsterTargets.exit,
           "center"
         )
       ) {
-        monster.onCollision("monster-exitCell");
+        monster.onTargetCollision("exit");
       }
     });
   }
@@ -235,21 +309,18 @@ export class Game {
   }
 
   public initialize() {
-    this.incrementRoundNumber();
+    this.updateModeTimingsForRound();
+    this.startNextRoundStage();
     this.player.initialize(
-      this.characterPositions.player.initial,
+      this.initialCharacterPositions.player,
       (characterAtNextPosition: CollidableObject) =>
         this.isPositionAvailable(characterAtNextPosition)
     );
     this.monsters.forEach((monster) =>
       monster.initialize(
-        this.characterPositions.monster[monster.name].initial,
         (characterAtNextPosition: CollidableObject) =>
           this.isPositionAvailable(characterAtNextPosition),
-        () => this.player.position,
-        this.characterPositions.monster[monster.name].scatterTile,
-        this.characterPositions.monster.reviveCell.position,
-        this.characterPositions.monster.exitCell.position
+        () => this.player.position
       )
     );
 
@@ -261,7 +332,7 @@ export class Game {
       this.updateCharacterPositions();
       this.checkForCharacterPelletCollisions();
       this.checkForCollisionsWithTeleporters();
-      this.updateMonsterTargetCells();
+      this.checkForMonsterTargetCollisions();
       this.checkForCharacterCollisions();
       this.renderer?.update(
         this.pellets.filter((pellet) => !pellet.hasBeenEaten),

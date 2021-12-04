@@ -1,6 +1,7 @@
 import { mazeTemplate } from "./config/mazeTemplate";
 import { Game } from "./classes/Game/Game";
 import { monsterConfig } from "./config/monster";
+import { config } from "./config/config";
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 
@@ -33,6 +34,6 @@ const mazeTemplates = [mazeTemplate];
 // ie: PacMan, Ms Pacman, etc
 // could have different mazes, different colors, different sprites etc
 
-const game = new Game(mazeTemplates, monsterConfig);
+const game = new Game(config, mazeTemplates, monsterConfig);
 
 game.initialize();

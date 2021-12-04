@@ -3,6 +3,7 @@ import { Direction } from "../../types/Direction";
 import { Position } from "../../types/Position";
 import { getHitboxForPosition } from "../../utils/getHitboxForPosition";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
+import { Monster } from "../Monster/Monster";
 
 export class Player extends Character {
   nextDirection: Direction;
@@ -17,6 +18,10 @@ export class Player extends Character {
       (characterAtNextPosition: CollidableObject) => false
     );
     this.nextDirection = "left";
+  }
+
+  public killMonster(monster: Monster) {
+    monster.die();
   }
 
   private isNextDirectionPossible() {
@@ -47,7 +52,6 @@ export class Player extends Character {
     initialPosition: Position,
     isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean
   ) {
-    this.setInitialPosition(initialPosition);
     this.setIsPositionAvailable(isPositionAvailable);
     window.addEventListener("keydown", (event) => {
       switch (event.key) {

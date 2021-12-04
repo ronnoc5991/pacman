@@ -9,7 +9,6 @@ export class Character extends CollidableObject {
   baseVelocity: number;
   velocityMultiplier: number = 1; // this should be changeable from the children of this class... depending on their game mode/location
   direction: Direction;
-  initialPosition: Position | null = null;
   stepProgress: number;
   stepSize: number;
   isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean;
@@ -30,8 +29,9 @@ export class Character extends CollidableObject {
     this.isPositionAvailable = isPositionAvailable;
   }
 
-  protected setPosition(position: Position) {
+  public setPositionAndUpdateHitbox(position: Position) {
     this.position = position;
+    this.updateHitbox();
   }
 
   protected setHitbox(hitbox: Hitbox) {
@@ -43,10 +43,6 @@ export class Character extends CollidableObject {
     this.setStepProgress(0);
   }
 
-  protected setInitialPosition(initialPosition: Position) {
-    this.initialPosition = initialPosition;
-  }
-
   protected setIsPositionAvailable(
     isPositionAvailable: (characterAtNextPosition: CollidableObject) => boolean
   ) {
@@ -55,16 +51,6 @@ export class Character extends CollidableObject {
 
   protected updateHitbox(position: Position = this.position) {
     this.setHitbox(getHitboxForPosition(position, this.size));
-  }
-
-  public teleportTo(newPosition: Position) {
-    this.setPosition(newPosition);
-  }
-
-  public goToInitialPosition() {
-    if (!this.initialPosition) return;
-    this.setPosition(this.initialPosition);
-    this.updateHitbox();
   }
 
   private setStepProgress(newStepProgress: number) {
@@ -104,15 +90,13 @@ export class Character extends CollidableObject {
       ) {
         numberOfStepsToTake = 0;
       } else {
-        this.setPosition(this.getNextPosition());
-        this.updateHitbox();
+        this.setPositionAndUpdateHitbox(this.getNextPosition());
         numberOfStepsToTake--;
       }
     }
   }
 
   protected getNextPosition(
-    // should this take into account the stepProgress that we have made?
     direction = this.direction,
     position = this.position,
     stepSize = this.stepSize
