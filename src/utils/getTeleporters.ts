@@ -36,8 +36,6 @@ export function getTeleporters(mazeTemplate: MazeTemplate) {
     }
   });
 
-  console.log(tunnelBarriers);
-
   return {
     teleporters: teleporterPositions.map((position, index) => {
       return new Teleporter(

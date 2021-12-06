@@ -13,6 +13,7 @@ export class Monster extends Character {
   isAlive: boolean = true;
   isInCage: boolean;
   isDormant: boolean;
+  isInSlowZone: boolean = false;
   backwards: Direction;
   shouldFlee: boolean;
   directions: ReadonlyArray<Direction>;
@@ -160,6 +161,12 @@ export class Monster extends Character {
     return this.shouldFlee && this.isAlive
       ? this.getRandomDirection(availableDirections)
       : this.getBestDirection(availableDirections, this.getTargetPosition());
+  }
+
+  public setIsInSlowZone(isInSlowZone: boolean) {
+    this.isInSlowZone = isInSlowZone;
+    if (isInSlowZone) this.velocityMultiplier = 0.5;
+    else this.velocityMultiplier = 1;
   }
 
   public die() {

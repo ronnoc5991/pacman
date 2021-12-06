@@ -51,5 +51,7 @@ export class CollisionDetector {
       return this.areEdgesColliding(objectOne, objectTwo);
     if (collisionType === "sameCell")
       return this.areOccupyingSameCell(objectOne, objectTwo);
+
+    return false;
   }
 }

@@ -39,8 +39,8 @@ export class Character extends CollidableObject {
   }
 
   protected setDirection(direction: Direction) {
+    if (this.direction !== direction) this.setStepProgress(0);
     this.direction = direction;
-    this.setStepProgress(0);
   }
 
   protected setIsPositionAvailable(
@@ -72,9 +72,8 @@ export class Character extends CollidableObject {
       this.setStepProgress(
         this.stepProgress + this.baseVelocity * this.velocityMultiplier
       );
-      if (!this.canAdvance()) return;
     }
-
+    if (!this.canAdvance()) return;
     let numberOfStepsToTake = Math.floor(this.stepProgress / this.stepSize);
     this.setStepProgress(
       this.stepProgress - numberOfStepsToTake * this.stepSize

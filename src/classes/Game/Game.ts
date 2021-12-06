@@ -22,6 +22,7 @@ import { Teleporter } from "../Teleporter/Teleporter";
 import { MonsterConfig } from "../../config/monster";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 import { useTimeout } from "../../utils/useTimeout";
+import {Cell} from "../Cell/Cell";
 
 export class Game {
   mazeTemplates: Array<MazeTemplate>;
@@ -44,6 +45,7 @@ export class Game {
   monsters: Array<Monster>;
   collisionDetector: CollisionDetector;
   renderer: CanvasRenderer;
+  slowZoneCells: Array<Cell>;
 
   constructor(
     config: GameConfig,
@@ -58,6 +60,7 @@ export class Game {
     const {
       barriers,
       initialCharacterPositions,
+      slowZoneCells,
       dimensions,
       pellets,
       teleporters,
@@ -67,6 +70,7 @@ export class Game {
     this.barriers = barriers.collidable;
     this.renderer = new CanvasRenderer(dimensions, barriers.renderable);
     this.collisionDetector = new CollisionDetector();
+    this.slowZoneCells = slowZoneCells;
     this.teleporters = teleporters;
     this.pellets = pellets;
     this.initialCharacterPositions = initialCharacterPositions;
@@ -102,6 +106,18 @@ export class Game {
   // TODO: Pass the monsters information about what they can and cannot do in their updatePosition function?
   // For example: Check if the monster is in a noUp cell, and pass it that boolean
   // Check if the monster is in a slowZone and pass it its velocity multiplier
+
+  // TODO: Should Game pass its information 'upward' to a renderer?  What is the correct interaction with the renderer?
+
+  private checkIfMonstersInSlowZone() {
+    this.monsters.forEach((monster) => {
+      let isInSlowZone = false;
+      this.slowZoneCells.forEach((slowZoneCell) => {
+        if (this.collisionDetector.areObjectsColliding(monster, slowZoneCell, 'sameCell')) isInSlowZone = true;
+      })
+    monster.setIsInSlowZone(isInSlowZone);
+    });
+  }
 
   // TODO: Give each round a different border color?  This way we know that they are different rounds?
 
@@ -329,6 +345,7 @@ export class Game {
     useAnimationFrame(() => {
       if (this.isRoundOver()) console.log("round is over");
       if (this.isGameOver()) console.log("game over");
+      this.checkIfMonstersInSlowZone();
       this.updateCharacterPositions();
       this.checkForCharacterPelletCollisions();
       this.checkForCollisionsWithTeleporters();
