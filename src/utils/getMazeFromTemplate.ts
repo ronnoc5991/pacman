@@ -93,11 +93,16 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
     });
   });
 
+  const { teleporters, barriers: tunnelBarriers } = getTeleporters(mazeTemplate);
+
+  tunnelBarriers.forEach((barrier) => barriers.collidable.push(barrier));
+
+
   return {
     dimensions,
     barriers,
     pellets: getPellets(mazeTemplate),
-    teleporters: getTeleporters(mazeTemplate),
+    teleporters,
     slowZoneCells,
     initialCharacterPositions: {
       player: getInitialPlayerPosition(
