@@ -7,7 +7,6 @@ import { Hitbox } from "../../types/Hitbox";
 
 export class Character extends CollidableObject {
   baseVelocity: number;
-  velocityMultiplier: number = 1; // this should be changeable from the children of this class... depending on their game mode/location
   direction: Direction;
   stepProgress: number;
   stepSize: number;
@@ -61,7 +60,7 @@ export class Character extends CollidableObject {
     return this.stepProgress >= this.stepSize;
   }
 
-  protected takeNextStep() {
+  protected takeNextStep(velocityMultiplier: number) {
     if (
       this.isPositionAvailable({
         position: this.getNextPosition(),
@@ -70,7 +69,7 @@ export class Character extends CollidableObject {
       })
     ) {
       this.setStepProgress(
-        this.stepProgress + this.baseVelocity * this.velocityMultiplier
+        this.stepProgress + this.baseVelocity * velocityMultiplier
       );
     }
     if (!this.canAdvance()) return;

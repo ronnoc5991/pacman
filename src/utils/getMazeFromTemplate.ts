@@ -11,7 +11,8 @@ import { getPellets } from "./getPellets";
 import { getInitialPlayerPosition } from "./getInitialPlayerPosition";
 import { RenderableBarrier } from "../types/RenderableBarrier";
 import { Cell } from "../classes/Cell/Cell";
-import { getSlowZoneCells } from "./getSlowZoneCells";
+import { getTunnels } from "./getTunnels";
+import { getNoUpCells } from "./getNoUpCells";
 
 export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
   const barriers = {
@@ -38,7 +39,7 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
   const pinkyScatterTarget = { x: -1, y: -1 };
   const clydeScatterTarget = { x: -1, y: dimensions.height + 1 };
 
-  const slowZoneCells = getSlowZoneCells(mazeTemplate);
+  const slowZoneCells = getTunnels(mazeTemplate);
 
   mazeTemplate.map((row, rowIndex) => {
     row.map((cell, columnIndex) => {
@@ -93,10 +94,10 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
     });
   });
 
-  const { teleporters, barriers: tunnelBarriers } = getTeleporters(mazeTemplate);
+  const { teleporters, barriers: tunnelBarriers } =
+    getTeleporters(mazeTemplate);
 
   tunnelBarriers.forEach((barrier) => barriers.collidable.push(barrier));
-
 
   return {
     dimensions,
@@ -104,6 +105,7 @@ export const getMazeFromTemplate = (mazeTemplate: MazeTemplate): Maze => {
     pellets: getPellets(mazeTemplate),
     teleporters,
     slowZoneCells,
+    noUpCells: getNoUpCells(mazeTemplate),
     initialCharacterPositions: {
       player: getInitialPlayerPosition(
         mazeTemplateCellValueMap.player,

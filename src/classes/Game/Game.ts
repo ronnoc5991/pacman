@@ -6,10 +6,12 @@ import { Monster } from "../Monster/Monster";
 import { getMazeFromTemplate } from "../../utils/getMazeFromTemplate";
 import { InitialPositionConfig, MonsterTargetsConfig } from "../../types/Maze";
 import {
+  CharacterVelocityMulitplierMap,
   DefiniteModeTiming,
   GameConfig,
   IndefiniteModeTiming,
   modeTimingConfig,
+  RoundCharacterVelocityMulitplierConfig,
   RoundGroup,
   RoundModeTimings,
 } from "../../config/config";
@@ -22,11 +24,16 @@ import { Teleporter } from "../Teleporter/Teleporter";
 import { MonsterConfig } from "../../config/monster";
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 import { useTimeout } from "../../utils/useTimeout";
-import {Cell} from "../Cell/Cell";
+import { Cell } from "../Cell/Cell";
+import { Character } from "../Character/Character";
+import { Direction } from "../../types/Direction";
 
 export class Game {
   mazeTemplates: Array<MazeTemplate>;
   modeTimings: Record<RoundGroup, RoundModeTimings>;
+  characterVelocityMultiplierConfig: CharacterVelocityMulitplierMap;
+  velocityMultipliersForRound: RoundCharacterVelocityMulitplierConfig | null =
+    null;
   roundModeTimings: RoundModeTimings | null = null;
   roundStage: number = 0;
   currentStageTiming: DefiniteModeTiming | IndefiniteModeTiming | null = null;
@@ -46,6 +53,7 @@ export class Game {
   collisionDetector: CollisionDetector;
   renderer: CanvasRenderer;
   slowZoneCells: Array<Cell>;
+  noUpCells: Array<Cell>;
 
   constructor(
     config: GameConfig,
@@ -53,6 +61,8 @@ export class Game {
     monsterConfig: MonsterConfig
   ) {
     this.modeTimings = config.modeTimings;
+    this.characterVelocityMultiplierConfig =
+      config.characterVelocityMultipliers;
     this.mazeTemplates = mazeTemplates;
     this.score = 0;
     this.roundNumber = 1;
@@ -61,6 +71,7 @@ export class Game {
       barriers,
       initialCharacterPositions,
       slowZoneCells,
+      noUpCells,
       dimensions,
       pellets,
       teleporters,
@@ -71,6 +82,7 @@ export class Game {
     this.renderer = new CanvasRenderer(dimensions, barriers.renderable);
     this.collisionDetector = new CollisionDetector();
     this.slowZoneCells = slowZoneCells;
+    this.noUpCells = noUpCells;
     this.teleporters = teleporters;
     this.pellets = pellets;
     this.initialCharacterPositions = initialCharacterPositions;
@@ -103,26 +115,88 @@ export class Game {
   // the scatterAndChase timings
   // the timings for the flee modes
 
-  // TODO: Pass the monsters information about what they can and cannot do in their updatePosition function?
-  // For example: Check if the monster is in a noUp cell, and pass it that boolean
-  // Check if the monster is in a slowZone and pass it its velocity multiplier
-
   // TODO: Should Game pass its information 'upward' to a renderer?  What is the correct interaction with the renderer?
 
-  private checkIfMonstersInSlowZone() {
-    this.monsters.forEach((monster) => {
-      let isInSlowZone = false;
-      this.slowZoneCells.forEach((slowZoneCell) => {
-        if (this.collisionDetector.areObjectsColliding(monster, slowZoneCell, 'sameCell')) isInSlowZone = true;
+  // TODO: The Game should regulate how fast each character can move
+  // It should have a config object just like the mode Timings
+  // It should grab the correct velocity mulitplier from the table and pass it/set it on the character based on their location
+
+  private getVelocityMultiplier(character: Character, isMonster: boolean) {
+    if (!this.velocityMultipliersForRound) return 1;
+    // at the beginning of the round, set the velocity mulitplier config
+    // if it is a monster that is alive and has not recently been revived, and it is flee mode, we need to impose a speed limit
+    // if is Monsters, check if in slowZone
+    // from this function, call other functions and determine what velocity multiplier takes precedent
+    // could maybe return a value from the supporting functions (1 or the limiting number)
+    // then choose the minimum from those returned values using Math.min();
+    if (isMonster) {
+      return Math.min(
+        this.velocityMultipliersForRound.monster[
+          this.isMonsterInTunnel(character as Monster) ? "tunnel" : "default"
+        ]
+      );
+    } else {
+      return Math.min(this.velocityMultipliersForRound.player.default);
+    }
+  }
+
+  private isMonsterInTunnel(monster: Monster) {
+    return (
+      -1 !==
+      this.slowZoneCells.findIndex((slowZoneCell) => {
+        return this.collisionDetector.areObjectsColliding(
+          monster,
+          slowZoneCell,
+          "sameCell"
+        );
       })
-    monster.setIsInSlowZone(isInSlowZone);
-    });
+    );
+  }
+
+  private getMonsterForbiddenDirections(monster: Monster): Array<Direction> {
+    const forbiddenDirections: Array<Direction> = [];
+    if (
+      -1 !==
+      this.noUpCells.findIndex((noUpCell) => {
+        return this.collisionDetector.areObjectsColliding(
+          noUpCell,
+          monster,
+          "sameCell"
+        );
+      })
+    )
+      forbiddenDirections.push("up");
+    return forbiddenDirections;
   }
 
   // TODO: Give each round a different border color?  This way we know that they are different rounds?
 
   private setMode(newMode: GameMode) {
     this.mode = newMode;
+  }
+
+  private setVelocityMultipliersForRound(
+    newVelocityMultipliers: RoundCharacterVelocityMulitplierConfig
+  ) {
+    this.velocityMultipliersForRound = newVelocityMultipliers;
+  }
+
+  private getVelocityMultipliersForRound(
+    roundNumber: number
+  ): RoundCharacterVelocityMulitplierConfig {
+    if (roundNumber === 1)
+      return this.characterVelocityMultiplierConfig.roundOne;
+    if (roundNumber >= 2 && roundNumber <= 4)
+      return this.characterVelocityMultiplierConfig.roundsTwoThroughFour;
+    if (roundNumber >= 5 && roundNumber <= 20)
+      return this.characterVelocityMultiplierConfig.roundsFiveThroughTwenty;
+    else return this.characterVelocityMultiplierConfig.roundsTwentyOneAndUp;
+  }
+
+  private updateVelocityMultipliersForRound() {
+    this.setVelocityMultipliersForRound(
+      this.getVelocityMultipliersForRound(this.roundNumber)
+    );
   }
 
   private getModeTimingsForRound(roundNumber: number): RoundModeTimings {
@@ -221,10 +295,13 @@ export class Game {
   }
 
   private updateCharacterPositions() {
-    this.player.updatePosition();
+    this.player.updatePosition(this.getVelocityMultiplier(this.player, false));
 
     this.monsters.forEach((monster) => {
-      monster.updatePosition();
+      monster.updatePosition(
+        this.getVelocityMultiplier(monster, true),
+        this.getMonsterForbiddenDirections(monster)
+      );
     });
   }
 
@@ -326,6 +403,7 @@ export class Game {
 
   public initialize() {
     this.updateModeTimingsForRound();
+    this.updateVelocityMultipliersForRound();
     this.startNextRoundStage();
     this.player.initialize(
       this.initialCharacterPositions.player,
@@ -345,7 +423,6 @@ export class Game {
     useAnimationFrame(() => {
       if (this.isRoundOver()) console.log("round is over");
       if (this.isGameOver()) console.log("game over");
-      this.checkIfMonstersInSlowZone();
       this.updateCharacterPositions();
       this.checkForCharacterPelletCollisions();
       this.checkForCollisionsWithTeleporters();

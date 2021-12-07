@@ -1,11 +1,7 @@
 import { CollidableObject } from "../CollidableObject/CollidableObject";
 import { Position } from "../../types/Position";
 
-type CellVariant =
-  | "slowZone"
-  | "monsterRevive"
-  | "monsterExit"
-  | "noUpwardTurns";
+type CellVariant = "tunnel" | "monsterRevive" | "monsterExit" | "noUpwardTurns";
 
 export class Cell extends CollidableObject {
   variant: CellVariant;

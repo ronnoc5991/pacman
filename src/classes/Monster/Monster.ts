@@ -13,7 +13,6 @@ export class Monster extends Character {
   isAlive: boolean = true;
   isInCage: boolean;
   isDormant: boolean;
-  isInSlowZone: boolean = false;
   backwards: Direction;
   shouldFlee: boolean;
   directions: ReadonlyArray<Direction>;
@@ -71,6 +70,8 @@ export class Monster extends Character {
   private updateDirection(direction: Direction) {
     this.setDirection(direction);
     this.setBackwards();
+    // TODO: We are updating the direction, and setting a new backwards without actually taking a step in the new direction
+    // this is causing use to do u turns constantly
   }
 
   private reverseDirection() {
@@ -100,11 +101,12 @@ export class Monster extends Character {
       : this.targetPositions[this.currentTarget];
   }
 
-  private getAvailableDirections() {
-    // TODO: use the information passed in from the game here, about which directions I can go in
+  private getAvailableDirections(forbiddenDirections: Array<Direction> = []) {
     return directions.filter((direction) => {
       return (
-        (this.isInCage || direction !== this.backwards) &&
+        (this.isInCage ||
+          (direction !== this.backwards &&
+            !forbiddenDirections.includes(direction))) &&
         this.isPositionAvailable({
           position: this.getNextPosition(direction),
           hitbox: getHitboxForPosition(
@@ -154,6 +156,7 @@ export class Monster extends Character {
         },
         { distanceToTargetTile: 10000, direction: this.direction }
       ).direction;
+    console.log(bestDirection);
     return bestDirection;
   }
 
@@ -161,12 +164,6 @@ export class Monster extends Character {
     return this.shouldFlee && this.isAlive
       ? this.getRandomDirection(availableDirections)
       : this.getBestDirection(availableDirections, this.getTargetPosition());
-  }
-
-  public setIsInSlowZone(isInSlowZone: boolean) {
-    this.isInSlowZone = isInSlowZone;
-    if (isInSlowZone) this.velocityMultiplier = 0.5;
-    else this.velocityMultiplier = 1;
   }
 
   public die() {
@@ -193,8 +190,14 @@ export class Monster extends Character {
 
   private shouldReverseDirection(oldMode: GameMode, newMode: GameMode) {
     return (
-      (oldMode === "pursue" && (newMode === "scatter" || newMode === "flee")) ||
-      (oldMode === "scatter" && (newMode === "pursue" || newMode === "flee"))
+      (oldMode === "pursue" &&
+        (newMode === "scatter" || newMode === "flee") &&
+        this.isAlive &&
+        !this.isInCage) ||
+      (oldMode === "scatter" &&
+        (newMode === "pursue" || newMode === "flee") &&
+        this.isAlive &&
+        !this.isInCage)
     );
   }
 
@@ -215,9 +218,13 @@ export class Monster extends Character {
     this.setTarget(this.name === "blinky" ? "player" : "exit");
   }
 
-  public updatePosition() {
+  public updatePosition(
+    velocityMultiplier = 1,
+    forbiddenDirections: Array<Direction> = []
+  ) {
     if (this.isDormant) return;
-    const availableDirections = this.getAvailableDirections();
+    const availableDirections =
+      this.getAvailableDirections(forbiddenDirections);
     if (availableDirections.length > 0)
       this.updateDirection(this.getNextDirection(availableDirections));
     if (
@@ -227,7 +234,7 @@ export class Monster extends Character {
         size: this.size,
       })
     )
-      this.takeNextStep();
+      this.takeNextStep(velocityMultiplier);
   }
 
   public initialize(

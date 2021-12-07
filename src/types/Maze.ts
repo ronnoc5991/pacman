@@ -45,6 +45,7 @@ export type Maze = {
   };
   pellets: Array<Pellet>;
   slowZoneCells: Array<Cell>;
+  noUpCells: Array<Cell>;
   teleporters: Array<Teleporter>;
   initialCharacterPositions: InitialPositionConfig;
   monsterTargets: MonsterTargetsConfig;

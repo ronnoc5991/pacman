@@ -35,7 +35,7 @@ export class Player extends Character {
     });
   }
 
-  public updatePosition() {
+  public updatePosition(velocityMultiplier: number) {
     if (this.direction !== this.nextDirection && this.isNextDirectionPossible())
       this.setDirection(this.nextDirection);
     if (
@@ -45,7 +45,7 @@ export class Player extends Character {
         size: this.size,
       })
     )
-      this.takeNextStep();
+      this.takeNextStep(velocityMultiplier); // TODO: Incorporate velocity multiplier here
   }
 
   public initialize(
