@@ -9,8 +9,9 @@ export class Game {
   defaultMode: GameMode = gameModeMap.pursue;
   mode: GameMode;
   score: number;
+  // TODO: is this an index into an array or the actual number?
   roundNumber: number;
-  livesCount: number;
+  livesLeft: number;
   maze: Maze | null = null;
   modeChangingTimeout: null | ReturnType<typeof setTimeout> = setTimeout(
     () => {}
@@ -21,11 +22,14 @@ export class Game {
     this.mode = this.defaultMode;
     this.score = 0;
     this.roundNumber = 0;
-    this.livesCount = 3;
+    this.livesLeft = 3;
   }
 
   private setMode(mode: GameMode) {
     this.mode = mode;
+    // TODO: should this update the game mode in the maze?
+    // or should there be some sort of subscription thing going on here?
+    // or should each thing be passed the current mode on each frame?
     this.maze?.updateGameMode(mode);
   }
 
@@ -42,7 +46,6 @@ export class Game {
     switch (event) {
       case "pelletEaten":
         this.score += 10;
-        console.log(this.score);
         break;
       case "powerPelletEaten":
         this.score += 50;
@@ -52,16 +55,13 @@ export class Game {
         this.score += 100;
         break;
       case "playerCharacterEaten":
-        this.livesCount -= 1;
+        this.livesLeft -= 1;
         this.maze?.reset();
-        console.log(`Lives Count: ${this.livesCount}`);
-        if (this.livesCount === 0) {
-          console.log("game over");
-          this.startNewRound(); // should not start a new round... should instead reset score, livesCount and round number
+        if (this.livesLeft === 0) {
+          this.startNewRound(); // should not start a new round... should instead reset score, livesLeft and round number
         }
         break;
       case "allPelletsEaten":
-        console.log("round over");
         this.startNewRound();
         break;
       default:
@@ -85,6 +85,7 @@ export class Game {
 
   public initialize() {
     this.startNewRound();
+    // TODO: the game consists of updating the maze?
     useAnimationFrame(() => this.maze?.update());
   }
 }
