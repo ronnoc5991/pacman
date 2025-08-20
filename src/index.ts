@@ -1,5 +1,5 @@
 import { mapTemplate } from "./config/mapTemplate";
-import { Game } from "./classes/Game/Game";
+import { Game } from "./classes/Game";
 import { GameConfig } from "./types/gameConfig";
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;

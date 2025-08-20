@@ -1,7 +1,7 @@
 import { Barrier } from "./Barrier";
 import { Position } from "./Position";
-import { Pellet } from "../classes/Pellet/Pellet";
-import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
+import { Pellet } from "../classes/Pellet";
+import { CollidableObject } from "../classes/CollidableObject";
 
 export type Map = {
   gridCellSize: number;

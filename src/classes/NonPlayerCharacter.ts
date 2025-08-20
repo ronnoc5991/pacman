@@ -1,7 +1,7 @@
-import { Character } from "../Character/Character";
-import { Position } from "../../types/Position";
-import { Map } from "../../types/Map";
-import { directions, Direction } from "../../types/Direction";
+import { Character } from "./Character";
+import { Position } from "../types/Position";
+import { Map } from "../types/Map";
+import { directions, Direction } from "../types/Direction";
 
 export class NonPlayerCharacter extends Character {
   navigableCellCenterPositions: Array<Position>;

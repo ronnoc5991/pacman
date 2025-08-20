@@ -1,17 +1,17 @@
-import { Map } from "../../types/Map";
-import { Barrier } from "../../types/Barrier";
-import { Position } from "../../types/Position";
-import { drawCircle } from "../../utils/drawCircle";
-import { checkIfObjectsAreColliding } from "../../utils/checkIfObjectsAreColliding";
-import { Pellet } from "../Pellet/Pellet";
-import { PlayerCharacter } from "../PlayerCharacter/PlayerCharacter";
-import { NonPlayerCharacter } from "../NonPlayerCharacter/NonPlayerCharacter";
-import { CollidableObject } from "../CollidableObject/CollidableObject";
-import { GameMode } from "../../types/GameMode";
-import { GameEvent, gameEventMap, gameEvents } from "../../types/GameEvent";
-import { getMapFromTemplate } from "../../utils/getMapFromTemplate";
-import { GameConfig } from "../../types/gameConfig";
-import { drawBarrier } from "../../utils/drawBarrier";
+import { Map } from "../types/Map";
+import { Barrier } from "../types/Barrier";
+import { Position } from "../types/Position";
+import { drawCircle } from "../utils/drawCircle";
+import { checkIfObjectsAreColliding } from "../utils/checkIfObjectsAreColliding";
+import { Pellet } from "./Pellet";
+import { PlayerCharacter } from "./PlayerCharacter";
+import { NonPlayerCharacter } from "./NonPlayerCharacter";
+import { CollidableObject } from "./CollidableObject";
+import { GameMode } from "../types/GameMode";
+import { GameEvent, gameEventMap, gameEvents } from "../types/GameEvent";
+import { getMapFromTemplate } from "../utils/getMapFromTemplate";
+import { GameConfig } from "../types/gameConfig";
+import { drawBarrier } from "../utils/drawBarrier";
 
 export class Maze {
   canvas: HTMLCanvasElement;

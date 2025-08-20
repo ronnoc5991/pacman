@@ -1,4 +1,4 @@
-import { Position } from "../../types/Position";
+import { Position } from "../types/Position";
 
 export class Cell {
   centerPosition: Position;

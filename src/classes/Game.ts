@@ -1,8 +1,8 @@
-import { useAnimationFrame } from "../../utils/useAnimationFrame";
-import { Maze } from "../Maze/Maze";
-import { GameMode, gameModeMap } from "../../types/GameMode";
-import { GameEvent } from "../../types/GameEvent";
-import { GameConfig } from "../../types/gameConfig";
+import { useAnimationFrame } from "../utils/useAnimationFrame";
+import { Maze } from "./Maze";
+import { GameMode, gameModeMap } from "../types/GameMode";
+import { GameEvent } from "../types/GameEvent";
+import { GameConfig } from "../types/gameConfig";
 
 export class Game {
   config: GameConfig;

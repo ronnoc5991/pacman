@@ -1,4 +1,4 @@
-import { CollidableObject } from "../CollidableObject/CollidableObject";
+import { CollidableObject } from "./CollidableObject";
 
 // export class Barrier extends CollidableObject {
 //   constructor() {

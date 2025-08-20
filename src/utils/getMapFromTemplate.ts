@@ -6,11 +6,11 @@ import {
   mapTemplateCellValueMap,
   TemplateCellValue,
 } from "../types/MapTemplate";
-import { Pellet } from "../classes/Pellet/Pellet";
-import { Teleporter } from "../classes/Teleporter/Teleporter";
+import { Pellet } from "../classes/Pellet";
+import { Teleporter } from "../classes/Teleporter";
 import { getBarrierVariant } from "./getBarrierVariant";
 import { getBarrierLine } from "./getBarrierLine";
-import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
+import { CollidableObject } from "../classes/CollidableObject";
 
 // TODO: Write function that searches mapTemplate for outer edges and creates an outline for them
 

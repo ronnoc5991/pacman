@@ -1,7 +1,7 @@
-import { Position } from "../../types/Position";
-import { Character } from "../Character/Character";
-import { Map } from "../../types/Map";
-import { Direction } from "../../types/Direction";
+import { Position } from "../types/Position";
+import { Character } from "./Character";
+import { Map } from "../types/Map";
+import { Direction } from "../types/Direction";
 
 export class PlayerCharacter extends Character {
   nextDirection: Direction;

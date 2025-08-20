@@ -1,4 +1,4 @@
-import { CollidableObject } from "../classes/CollidableObject/CollidableObject";
+import { CollidableObject } from "../classes/CollidableObject";
 
 type Collision = "edge" | "center" | "overlap";
 
